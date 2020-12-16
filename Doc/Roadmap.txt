@@ -1,0 +1,398 @@
+
+
+V e r s i o n   0 . 2 . x
+
+Contained and External Corps, ExtAddrs
+
+    Contained Corps (ContCorps) are Corps created by a containing Corps and are private to it.  They are Workers and
+    are used in the same way as other Workers, such as Concs and Funcs (meaning attributes accessed using Names and
+    async returns accessed using Futures).
+
+    External Corps (ExtCorps) are top-level Corps (they are not contained by any other Corps).  Currently we can load
+    ExtCorps but one ExtCorps cannot make requests of another one.  They are also Workers and are used as such, but
+    their Names contain ExtAddrs as the ___target__ attribute instead of ConcAddrs (transparent to developers).
+
+    ExtAddrs are a new type of address within Names. Currently Names and Msg passing only support ConcAddrs which are
+    internal, logical addresses within Corps.  ExtAddrs will be physical addresses (i.e. IP/Port) used by to make
+    requests to an ExtCorps.  Names with ExtAddr targets will be known as ExtNames (this is not a new Name class, at
+    least at this time).
+
+    These have all been informally designed (i.e. notes).
+
+
+
+D o w n   t h e   R o a d
+
+    These are in no particular order, however Packing, Funcs, and Multi-Host (including minimalist versions of the
+    Admin Mgr and Admin Deamon), plus some smaller issues, are likely targets for Version 0.3.x.
+
+    This list is also preliminary.  We will learn more as we progress and get experience using Corps Python and that
+    will undoubtedly trigger more additions as well as some changes to existing entries.
+
+    The items here are also just descriptions. not specifications or lists of requirements.
+
+
+Testing: Python versions, cpu-types, OSs, clouds (Aws, Azure, Google, others), unit tests
+
+    This is a large task that will have to be repeated repeatedly.  It will require a fair amount of money to perform,
+    but for now volunteers who have access to instances on various platforms and would like to run the tests would be
+    welcome.
+
+    This testing needs to be automated as well.  That would require the ability to permanently or dynamically provision
+    instances.
+
+    We currently only have integration tests that attempt to thoroughly exercise Corps Python.  We need to examine the
+    need for unit tests and implement them if necessary.
+
+
+Packing: ("pickling") functions, classes, lambdas, iterators, generators, inner functions, decorators, named tuples, etc
+
+    What Python calls pickling and persistence Corps Python calls packing. Packed objects can be shipped across a net-
+    work or stored on disk and then unpacked upon arrival at an arbitrary Env.  It is an important way Corps Python sup-
+    ports heterogeneity across processor types (we heavily depend upon the Python platform's portability for much as
+    well).
+
+    Python's pickling module does not support everything and we really do desire that.  So a full investigation into
+    alternatives such as dill must be undertaken. Once a choice is made the new package must be integrated into Corps
+    Python.
+
+    We also need to look ar why persistence is different than pickling in Python.  Why is is not recommended to use
+    pickling for storing objects on disk?  Do dill, cloudpickle, etc have the same limitations?
+
+
+Funcs: full implementation dependent upon full packing implementation
+
+    Funcs are to sets of functions as Concs are to class-based Python objects.  They are persistent Workers that can be
+    operated on with asynchronous requests and in parallel.  Will be based upon Concs.  Want to have an implementation
+    that allows creation of Conc-level or Corps-level Funcs (need different names for each?).  Need its own Name class?
+
+    This has largely been informally designed (i.e. notes) but a few issues remain.
+
+
+Multi-Host: Admin Daemon, HW Config
+
+    Once ExtCorps are functional we need to build a simple version of the Admin Daemon (as an ExtCorps) that can load
+    a Corps and to create an Env for an existing Corps on another host in the configuration.
+
+    HW Config is tricky, at least for now.  This is tied into auto-provisioning, infrastructure-as-code, tools and
+    services created by others, industry standards, de-facto standards, etc.
+
+    Initially we will probably just use a simple, file-based data structure to provide a list of Hosts and their IP
+    address, login (encrypted???), Admin Daemon Port, etc for loading a Corps on multiple hosts.
+
+
+Admin Daemon
+
+    Manages Corps (with the Admin Mgr), Envs, and Hosts.  Provides services to Corps, Envs, and the Admin Mgr.
+
+    The near-term need here is to boot Corps and Envs for an existing Corps on an arbitrary host.  This is needed for
+    multi-host Corps to be deployed.
+
+    They will exist as ExtCorps and be booted by operations staff, one per host in a HW configuration.
+
+
+Admin Mgr
+
+    Manages Corps (with the Admin Daemon), HW Config, and Admin Daemons.  Provides services to Corps and Admin Daemons.
+    Implements the operator's console.
+
+    It will exist as an ExtCorps and be booted by operations staff on a set of hosts (for fault-tolerance) in a HW
+    configuration.
+
+
+Self-Healing: Fails, Exits, Restarts
+
+    A great deal of design work has been accomplished here but is not complete.  The design depends upon the design of
+    ExtCorps, ContCorps, EnvMgr, CorpsMgr, Envs, Multi-Host, Admin, etc but they in turn depend upon how Fails and
+    Restarts are designed, thereby complicating all of the above (a complete separation of concerns is always the ideal
+    but not practical in every case).
+
+    Needless to say getting this right is paramount and we expect a number of iterations of build-test-fix with
+    possibly some re-design mixed in.  Chaos testing will be fun!
+
+
+Self-Scaling: Scaled Corps, based upon request queue length
+
+    We have a number of other self-scaling mechanisms such as the thread pool size within each Env, the ability to add
+    Envs, and restarting a Corps on a different, possibly more capable configuration.  But a Scaled Corps is the aspect
+    most people associate with self-scaling systems - deployable entities that can be replicated to handle increasing
+    loads, especially from increased numbers of users.
+
+    A Scaled Corps is a Corps Python implementation of a classic concurrent server.  Instead of a single Corps handling
+    all client requests, it creates a dynamically re-sizable pool of Corps that handle them.
+
+    This is relatively straightforward to do, the primary complication being where in the configuration do we boot the
+    next instance (which itself may boot other ExtCorps or ContCorps).  This is a general problem that is not specific
+    to ScaledCorps - it exists for the booting of any Corps of any type on a multi-host configuration.
+
+    The primary responsibility for this decision lies with the Admin Mgr, which collects utilization info from across
+    the configuration via the set of Admin Daemons on all the hosts.  It will also have to take into account the number
+    of Envs each Corps requests to be booted with.
+
+
+Conc: Composable main
+
+    Conc has a hard-coded main loop (receive request, process, return result) but hooks have been planned for inheritors
+    to specialize processing.
+
+    We will take the existing code sequence and convert it to separate member functions and rewrite main using those
+    functions.  Developers can override main as well as any of the member functions in Conc subclasses.
+
+
+Dirs
+
+    Dirs are the proposed solution to two different problems.  One is that globals in Python are only supported at the
+    module-level.  The other is that we wanted a more loosely-coupled method to finding a Worker within an Env or a
+    Corps or external to a Corps (i.e. finding another ExtCorps).
+
+    A Dir is essentially a Dict implemented as a Conc or a Corps (we will have both).  A key could be a Class or a Tag
+    (a text name provided to the Worker Factory upon Worker creation), or possibly both.
+
+    Default Dirs will exist in each Env and in every Corps and will provide a hierarchical namespace in which to regis-
+    ter and to locate other Workers.  If we formalize an Application to be an assemblage of multiple Corps, we could
+    also have a default ExtCorps Dir as the outer-most part of the hierarchical namespace.
+
+    In addition a Corps could create its own Dirs in each Env or at the Corps-level or as ExtCorps (for use in multi-
+    Corps situations).
+
+    The informal design of Dirs (in the form of notes) is complete.
+
+
+Corps: Auto-loading
+
+    We need a systematic way for a Corps to load system components at boot-time.  We already do hard-coded loads in
+    CorpsMgr and EnvMgr boot sequences for required system components.  Auto-loading would provide a way for developers
+    and operators to specialize a Corps at the system-level.
+
+    Do we need a special file that is executed at boot?  Do we extend the Corps Config file (which initializes Corps
+    attributes at boot)?
+
+
+Workers: Deletes
+
+    Workers are persistent.  Support exists for Workers to kill themselves, but we need to add support so that their
+    Mgr or the EnvMgr or the CorpsMgr, etc can kill them cleanly.
+
+
+Conc: my_Mgr
+
+    Method that returns the Name or ExtName of their Mgr (the Worker that created them).
+
+
+Msgs: to self.my_Self from Worker
+
+    Need ability of a Worker to asynchronously send requests to itself (i.e. using its own Name).
+
+
+Msgs: test to Name from a thread
+
+    Need the ability of a thread to send requests using a Name to a Worker.  Believe this already works so it maybe only
+    needs to be tested.
+
+
+my_X
+
+    Set of functions that allow a Worker to find references or information about itself, its Env, its Corps, etc.
+
+
+Workers: Add Envs, both local and remote
+
+    Corps are self-scaling in multiple respects.  One important way is to manually or automatically add Envs to a Corp.
+
+    Since Envs run in a dedicated process somewhere in a configuration this allows a Corps to expand its hardware
+    footprint.  Workers cannot be migrated to other Envs, including new ones, but new Envs will be able to have new
+    Workers located in them.
+
+
+Performance Tuning
+
+    While we have strived to create an architecture and design that are performant, this is just the first iteration of
+    both and the implementation has been done entirely in Python.
+
+    At a certain point in the future the implementation will be far enough along that we can hope to avoid "premature
+    optimization" and can perform a thorough performance analysis and tuning. Assuming the Pareto Principle is applica-
+    ble, a modest re-implementation in C/C++ of much-used functions, and possibly pathways, will be done.
+
+
+Network: FastPath for intra-Env and inter-Env
+
+    All messaging between Workers currently uses Tcp/IPv4.  The FastPath implementation for messaging within the same
+    Env which uses inter-thread Queues (and requires no packing/unpacking) must be coded.
+
+    A FastPath solution for messaging between Workers within the same host, but different Envs (and thus different
+    processes), must be investigated. It is not clear if a LocalHost network implementation will be inferior to IPC
+    mechanisms such as Queue or Shared Memory given that packing/unpacking is still required and can present signifi-
+    cant overhead that may dominate the other costs.
+
+
+Network: Flow Control
+
+    We do not want clients to overwhelm a Corps with too many requests at a time.  This is both a fairness issue (we do
+    not want one client to dominate other clients accessing an API) as well as a security issue (denial of service
+    attacks remain a relatively easy-to-implement but major disruption).
+
+    So we need to implement some flow control.  How to do this is TBD - we have a number of options, so the tradeoffs
+    must be looked at.
+
+    When a client makes a request they have an open connection which can timeout if a response takes too long.  Any
+    solution must be cognizant of this.
+
+
+Network: IPv6
+
+    We currently only support TCP over IPv4 and we would like to support IPv6 as well.
+
+
+Network Security: IPSec, others
+
+    Security has not been a large factor in the design of Corps Python to date. Transmitting Msgs with optional ident-
+    ity, authentication, encryption, integrity, etc. services, for communicating within a Corps and between them is a
+    base minimum level of support.
+
+    We'll need to look at further security support at higher levels.  User auth, for example, will be important. And
+    imagine Conc-based threat detection bots in each Env and Corps.
+
+    While Kubernetes does not have a true notion of application, Corps Python can be more explicit with it - we could
+    derive "App" from generic "Corps" and give it more capabilities, including some for securing the application.
+
+    This needs to investigated as to how much to rely on external services and what to incorporate internally.
+
+
+Futures: Upgrade wait_any, wait_all
+
+    These are functions to help with managing results from concurrent requests from multiple servicing Workers.
+
+    These are currently implemented as client-level library functions that call Msg-level functionality.  They will
+    be re-implemented at the Msg-level (essentially improving effective response times).
+
+
+Packaging: .exe, Docker, etc.
+
+    We support loading of a standalone ExtCorps as a Python source code file.  We want to be able to load Corps that
+    are .exes, container-based, and possibly other packaging choices.
+
+
+Replicated Concs and Funcs
+
+    With the Worker Factory and Dir functionality these are more patterns than actual Worker types, but it is worth
+    investigating if we should provide direct support towards their creation and use.
+
+    A Timer per Env would be an example of a use of this.  The Timer, as a Replicated Conc, would be created and regis-
+    tered in each Env's default Dir at boot by the CorpsMgr. A Worker could easily find the local (i.e. in the Env where
+    it is located) Timer via the default Env-level Dir and schedule the send of a Msg to another or itself.
+
+
+Parallel Map-Reduce-Filter
+
+    Python's functionality for map, reduce, and filter assumes synchronous operations.  The same is true for their
+    preferred replacement, the various types of comprehensions.
+
+    Comprehensions are a closed implementation.  Perhaps later we can go into Python code and re-implement them for
+    Corps Python's async operations.  But that probably means our own version of Python itself which kills our status as
+    being usable by any standards-conforming instance of Python.
+
+    But we can and will provide map, reduce, and filter for Corp Python's asynchronous operations.
+
+
+Timer
+
+    Python support for time-based operations, either for intervals or at a particular time, is a little thin. Areas such
+    as real-time systems or job scheduling or simulations could benefit from more support.
+
+    We will create Timer Workers as Replicated Concs and as a Corps-global Conc (i.e. registered in the default Dirs)
+    that can sync to network atomic clocks and can provide timing services for wakeups, Msg auto-sends, etc.
+
+
+Logger
+
+    Logging in a Python program is typically done at the module- or process- level.  We will utilize the standard
+    logger functions to create Logger Workers that can exist at the Env, Corps, and ExtCorps levels.
+
+    These could be optionally ganged-together so that a Worker logs to a local Logger Replicated Conc, which will pass
+    it on to a Corps-level Logger Conc, which will pass it on to an ExtCorps Logger that logs for all the Corps in a
+    app or service.
+
+    Informally designed (notes).
+
+
+Tracing
+
+    Goes hand-in-hand with logging (which tracing will probably utilize) to track what is going on with a request to an
+    ExtCorps from a user.  This provides a record of the sequence of Msgs to Corps as the user request is serviced.
+
+    How to do this without adversely affecting the Msg path performance will be a little challenging.
+
+
+HW Auto-Provisioning
+
+    This is highly desirable - to have a programmatic way to transparently (to the end-developer) be able to automatic-
+    ally change the HW configuration to economically handle auto-scaling without having a fixed, manually-created
+    configuration.
+
+    This is difficult to do in a hybrid context - lots of incompatible vendor methods plus dealing with end-user-owned
+    hosts.
+
+    In all likelihood we will rely upon an external service's api to get this done, so we will just need to integrate.
+    Let's hope there are suitable industry standards and vendors that support them.  Otherwise we will have to go with
+    a de-facto standard and to probably only be able to recommend a single-vendor.
+
+
+Concs: Protocols and Transactions
+
+    We will seek to provide support for transactions and protocols across multiple requestors.  These will lever-
+    age Conc main()'s composability.  But a number of issues complicate matters.
+
+    Currently main ensures atomicity (we finish one request before beginning the next one), even if the service uses
+    concurrent Workers to service the request.
+
+    Both protocols and transactions establish and maintain a context over a series of interactions between a client and
+    a service.  Both entities are essentially running respective state machines in lock-step.
+
+    How to handle multiple clients concurrently? Is it Corps Python's responsibility or the developer's or shared? Can
+    we utilize Scaled Corps to handle each separate requestor? Do we provide only state machine support or additional
+    support (e.g. rollbacks, persistence services, etc for transactions), etc...
+
+
+Images
+
+    Some applications want to be able to shutdown but preserve the current state for the next session or to be able to
+    provide for rollbacks to a previous state in the case of aborts or failures.  Images would allow a snapshot to be
+    taken of a Corps and later restored.
+
+
+Dynamic Code Updates
+
+    There are certain circumstances in long running, highly reliable computations (e.g. pacemakers, water quality mon-
+    itoring, etc) where code needs to be updated.  In many cases simply sequentially shutting down redundant pieces, one
+    at a time, and starting up a new version in its place (until all the old entities are replaced) will suffice.
+
+    There will be some cases where such redundancy does not exist but the code must be replaced (due to a bug for ex-
+    ample).  We would like to be able to deploy a version of the entity with upgraded code and then smoothly switch over
+    to the new entity.  This would probably be done at the Corps-level (it may be too granular at the Conc-level).
+
+    This is similar enough to Restarts that it may be straightforward to do.  Will revisit this sometime after Restarts
+    are working.
+
+
+Debugger
+
+    Logging and Tracing are nice but there are times when nothing but a debugger will do.  But they are difficult to do
+    in a distributed system due to the complexity (one could argue this could be written "impossibility") of tight syn-
+    chronization of the entire computation, indeterminism (e.g. ordering of messages), etc.
+
+    Even with a non-perfect distributed debugger (multiple runs from the same starting point would not yield the same
+    state in the computation at a given breakpoint), in many cases the information that could be gleaned would be better
+    than having nothing at all. And in some of those cases the difference in state outside of the entities being con-
+    trolled and examined may not matter.
+
+    Debuggers are generally either standalone tools or exist as part of an IDE so at a minimum we want to understand
+    what hooks Python provides to debuggers and extend them for Corps Python.  It may be that simply running sync'd
+    multiple debugger copies is all that is subsequently required (although that my not be possible in some IDEs).
+
+
+Autogen of Corps Python Reference from docstrings
+
+    The Reference is currently created by manually copying docstrings from select (developer-facing) files.  A simple
+    script that takes a list of those files and autogens the Reference would be nice.
+
+

@@ -1,0 +1,11 @@
+
+
+I s s u e s
+
+
+Network: Disconnect problems (Windows 7 only?, LocalHost only?)
+
+    Testing on an 8 core Windows 7 machine has resulted in many disconnects (and retries).  Need to know why these are
+    happening and find a solution.
+
+

@@ -1,0 +1,40 @@
+
+
+P r o j e c t   S t a t u s
+
+The current release version of Corps Python, 0.1.0, should be considered a Developer's Evaluation version.
+
+It is a release version and is closed to new development.  The latest version currently under development can be found
+at github.com/DavidAyer/CorpsPython.
+
+Prominent features such as multi-host Corps, Python functions as Workers (Funcs), multi-Corps interoperability
+(both External and Contained, private, Corps), Auto-Scaling, Auto-Healing, etc. are not yet operational.
+
+Some aspects of the current implementation are not in their final form.  All messaging between Workers uses the
+Tcp/IP V4 network stack.  The FastPath implementation for messaging within the same Env which uses inter-thread
+Queues (and requires no pickling/unpickling) must be coded.
+
+A FastPath solution for messaging between Workers within the same host, but different Envs (and thus different
+processes), must be investigated. It is not clear if a LocalHost network implementation will be inferior to IPC
+mechanisms such as Queue or Shared Memory given that pickling/unpickling is still required and can present
+significant overhead that may dominate the other costs.
+
+The standard pickling library which is used for all cross-process (and thus all cross-Env) traffic is woefully
+inadequate. Too many types, especially ones defined at run-time, are not supported by pickle.  Further investigation
+is planned to look at solutions such as dill or cloudpickle for their applicability and performance.
+
+In addition, testing across Python versions and implementations and operating systems has been minimal.
+
+However, excepting those caveats, properly decomposed multi-Env microservices, services, and applications can still be
+developed for a single, multi-core, multi-processor host that are reasonably performant.
+
+For now a simple workaround for the lack of Funcs is adding a method per Python function to a Conc subclass (a
+Conc is a type of Worker for Python class-based objects).  The new method should mimic the api for the function.
+
+A workaround for Contained (private) Corps is to use Concs instead. See the Tutorial for the creation and use of Concs.
+
+There is no workaround for interoperability between External Corps.  Currently they can only be launched from scripts
+and the pathways for message passing between them are incomplete.  Contained and External Corps creation, message
+passing, and tear-down are the current development focus.  The Admin Daemon, which can create and control Corps and
+Envs on remote hosts, will be an External Corps and so multi-host functionality is dependent on External Corps
+operations.

@@ -1,0 +1,275 @@
+
+
+C o r p s   P y t h o n   V e r s i o n    0 . 1
+
+
+W o r k e r s
+
+
+    l o a d _ C o r p s ( )
+
+    Loads a Corps from a script.
+
+    load_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs)
+
+        CorpsClass is the class of the Corps to load.
+
+        ConfigFiles is a list of Config file names.  See the Config Files entry below for a list of possible
+            parameter entries in the Config File.  The Config files are processed in order - later entries for the
+            same parameter override earlier ones.
+
+        *args and **kwargs are regular parameters to the Corps class's __init__
+
+
+
+    c r e a t e _ W o r k e r s ( )
+
+    Factory function to create Workers.  Only the creation of Concs inside of a Corps by a Corps or another Conc
+    are supported at this point.
+
+    create_Workers(Mgr, WorkerClass, *args, LocType=LocType.Auto, LocVal=None, Num=1, **kwargs)
+
+        Returns a list of Names of Workers.
+
+        Mgr is the Manager of the Worker.  Caller should use self.my_Name() at this time.
+
+        LocType
+
+            LocType.EnvId
+                Create Num Workers in caller-chosen Env
+
+            LocType.Auto
+                Create Num Workers in Corps Python-chosen Env
+
+            LocType.PerEnv
+                Create Num Workers in every Env
+
+        LocVal
+            Integer
+                value > 0
+                For LocType=LocType.EnvId
+
+            None
+                For LocType=LocType.Auto or LocType.PerEnv
+
+        Num:
+            Number of Workers per Loc
+
+        *args and **kwargs are regular parameters to Worker class's __init__
+
+
+
+C o r p s
+
+    A Corps is a large-grained Worker.
+
+
+    i n i t ( )
+
+    A Corps subclass's __init__() should call:
+        super().__init__()
+
+
+    c l e a n u p ( )
+
+    When exit() is called on a Corps its cleanup() will automatically be called.  It, in turn, should call cleanup()
+    on all of its Workers.  All cleanup() implementations should also close database transactions, flush and close
+    files, etc.
+
+
+    m y _ N a m e ( )
+
+    Returns a new Name of the Corps instance.
+
+
+
+C o n c
+
+    Conc is a type of Worker with a medium grain-size.
+
+
+    i n i t ( )
+
+    A Conc subclass's __init__() should call:
+        super().__init__()
+
+
+    c l e a n u p ( )
+
+    When exit() is called on a Corps its cleanup() will automatically be called.  It, in turn, should call cleanup()
+    on all of its Workers, including Concs.  Conc subclasses should call it on all of its Workers.  All cleanup()
+    implementations should also close database transactions, flush and close files, etc.
+
+
+    m y _ N a m e ( )
+
+    Returns a new Name of the Conc instance.
+
+
+
+F u t u r e
+
+    R e t   o r   r e t
+
+    Attribute, the returned result, whose access blocks until the result is ready, or returns the result immediately
+    if the result is already available.
+
+    Either spelling works the same.
+
+
+    r e t _ r e a d y ( )
+
+    Futures's non-blocking method ret_ready returns True if the result is ready or False otherwise.
+
+
+    w a i t _ a l l ( )
+
+    Function that waits until all Futures results have completed.
+
+    wait_all(FutRets, InitDelay=0.05, DelayIncPct=20, MaxTries=25):
+
+        FutRets is a list of Futures.
+
+        Wait until all Futures results have completed or we exceed MaxTries waits for uncompleted results.
+
+        Uses a sleepy waiting algorithm which has an initial wait time of InitDelay which then increases DelayIncPct
+        for each wait thereafter.
+
+        Raises a AsyncLocalMaxRetries Exception if MaxTries have been attempted and all results are not complete.  If
+        a Worker caller of wait_all is providing a service for another Worker, raising a AsyncRemoteMaxRetries
+        Exception is probably the correct response to receiving a AsyncLocalMaxRetries Exception from wait_all.
+
+
+    w a i t _ n e x t ( )
+
+    Generator that returns the next ready Futures result index into FutRets.
+
+    wait_next(FutRets, InitDelay=0.05, DelayIncPct=20, MaxTries=25):
+
+        FutRets is a list of Futures.
+
+        Return the next ready Futures result index or we exceed MaxTries waits for uncompleted results.
+
+        Uses a sleepy waiting algorithm which has an initial wait time of InitDelay which then increases DelayIncPct
+        for each wait thereafter.
+
+        Raises a AsyncLocalMaxRetries Exception if MaxTries have been attempted and all results are not complete.  If
+        a Worker caller of wait_next is providing a service for another Worker, raising a AsyncRemoteMaxRetries
+        Exception is probably the correct response to receiving a AsyncLocalMaxRetries Exception from wait_next.
+
+
+
+E x c e p t i o n s
+
+    AsyncLocalExceptions are generated in the client Worker's Env.
+
+    A s y n c L o c a l M a x R e t r i e s
+
+    AsyncLocalMaxRetries exceptions are generated when the maximum number of unsuccessful retries to a service
+    Worker have been made (A makes max requests of B, A raises).
+
+
+    AsyncRemoteExceptions are generated in the server Worker's Env.  They capture the remote exception TypeName,
+    Value and TracebackStrings as attributes.
+
+    A s y n c E x e c u t i o n E r r o r
+
+    AsyncExecutionError remote exceptions are generated when a service Worker's methods raise an exception.
+
+
+    A s y n c R e m o t e M a x R e t r i e s
+
+    AsyncRemoteMaxRetries remote exceptions are generated when the maximum number of unsuccessful retries to a
+    service Worker have been made to service a request from another service Worker (A makes a request of B who
+    makes max requests of C to execute A's request, raised by B).
+
+
+    A s y n c A t t r i b u t e E r r o r
+
+    AsyncAttributeError remote exceptions are generated when the server Worker does not possess a requested
+    atttribute.
+
+
+
+C o n f i g  F i l e s
+
+    Config Global attributes for each instantiated Corps.
+
+    Defaults can be overridden by user-supplied Config files passed to load_Corps() in Workers.py.
+
+    The Config files are regular Python files with assignments to attributes documented here.
+
+    Most of these attributes are for use by experts.
+
+    Of interest to more casual operators is NumEnvs which declares the number of Envs a particular run of a
+    Corps will execute in.  Generally a minimum of one Env per core or processor should be used.
+
+    Multiple user-supplied Config files are supported, with the later files overwriting earlier files' setting
+    of particular attributes.
+
+    Config attributes are limited to those listed here.  User-defined attributes are discarded.
+
+    Config attributes can also be set in the operating environment via a script:
+
+        from os import environ
+        environ['NumEnvs'] = str(100)
+
+    And then read in a user-supplied Config file and the corresponding attribute set:
+
+        from os import environ
+        NumEnvs = int(os.environ['NumEnvs'])
+
+
+    N u m E n v s   =   8
+
+    Number of Environments when Corps is deployed
+
+
+    T h r e a d P o o l _ M i n T h r e a d s   =   10
+
+    Minimum number of threads in ThreadPool
+
+
+    T h r e a d P o o l _ T h r e a d s I n c   =   10
+
+    Number of threads added when ThreadPool's WorkQ's Length exceeds ThreadPool_MaxQueueLength
+
+
+    T h r e a d P o o l _ M a x Q u e u e L e n g t h   =   10
+
+    Maximum length of ThreadPool's WorkQ before ThreadPool_ThreadsInc threads are added
+
+
+    N e t w o r k i n g _ M a x _ C o n n e c t i o n _ A t t e m p t s   =   25
+
+    Maximum number of attempts to connect to a service
+
+
+    N e t w o r k i n g _ C l i e n t _ T i m e o u t   =   10
+
+    Number of seconds before a client network operation times out
+
+
+    N e t w o r k i n g _ S e r v e r _ T i m e o u t   =   10
+
+    Number of seconds before a server network operation times out
+
+
+    N e t w o r k i n g _ M a x _ Q u e u e d _ C o n n _ R e q u e s t s   =   100
+
+    Maximum number of connecton requests in queue before refusing any more
+
+
+    M a x _ M s g _ R e q u e s t _ A t t e m p t s   =   50
+
+    Max round-trip attempts to send and respond to a Msg request between two Workers
+
+
+    R e s u l t s C a c h e _ M a x _ E n t r y _ T T L   =   timedelta(seconds=1)
+
+    Maximum time to live for a Cache entry
+
+
+    R e s u l t s C a c h e _ M i n _ C l e a n _ I n t e r v a l   =   timedelta(seconds=2)
+
+    Minimum time between cleaning of old entries
