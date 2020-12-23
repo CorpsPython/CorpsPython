@@ -11,8 +11,6 @@
     Needed to support Workers' LocType=Auto gen of a next Env to create a Worker in.  Placed it here since it
     required the highest EnvId already alloc'd as N in modulo-N.
 
-    Needed to gen an Env-global MsgId per Msg so put it here to save a lock/unlock...see get_to_connect() here and
-    ProxyMakeRequest.py.
 '''
 
 
@@ -23,17 +21,12 @@ from EnvAddrSpace import MIN_ENVID, MAX_CONT_CORPS_ENVID
 
 
 
-MAX_MSGID = pow(2, 32) - 1
-
-
-
 class EnvTable():
     def __init__(self):
         self.Dict = dict()
         self.Lock = Lock()
         self.HighestEnvId = 0           # Highest alloc'd EnvId in this Corps (i.e. not those Cont or Ext Corps)
         self.NextEnvId = MIN_ENVID
-        self.MsgId = 0
 
 
     def register(self, EnvId, anEnvRecord):
@@ -101,41 +94,6 @@ class EnvTable():
 
         assert anEnvRecord != None
         return copy(anEnvRecord)
-
-
-    def get_to_connect(self, EnvId, Attempt):
-        '''
-            Find and return the EnvRecord for a given EnvId
-
-            If this is the first attempt (Attempt == 1) alloc and return a MsgId, otw return None
-
-            Used only for gets used in message passing (see ProxyMakeRequest.py)
-        '''
-
-        self.Lock.acquire()
-
-        if Attempt == 1:
-            self.MsgId += 1
-
-            if self.MsgId > MAX_MSGID:
-                self.MsgId = 0
-
-            TempMsgId = self.MsgId
-
-        else:
-            TempMsgId = None
-
-        anEnvRecord = None
-        try:
-            anEnvRecord = self.Dict.get(EnvId)
-
-        except:
-            pass
-
-        self.Lock.release()
-
-        assert anEnvRecord != None
-        return copy(anEnvRecord), TempMsgId
 
 
     def unregister(self, EnvId):
