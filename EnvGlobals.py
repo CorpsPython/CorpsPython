@@ -10,6 +10,7 @@
 
 
 from threading import local
+from MsgIdMgr import MsgIdMgr
 from ConcIdMgr import ConcIdMgr
 from Addr2Conc import Addr2Conc
 from ThreadPool import ThreadPool
@@ -83,6 +84,8 @@ def my_EnvMgrAddr():
     global EnvMgrAddr
     return EnvMgrAddr
 
+
+_MsgIdMgr = MsgIdMgr()
 
 _ConcIdMgr = ConcIdMgr()
 
