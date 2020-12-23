@@ -19,8 +19,9 @@
     If (Config variable) Max_Msg_Request_Attempts are made without success an AsyncLocalTimeout is raised.
 '''
 
+
 from CorpsMsg import *
-from EnvGlobals import TheThread, _EnvTable, _ThreadPool, my_Ip, my_Port
+from EnvGlobals import TheThread, _EnvTable, _ThreadPool, my_Ip, my_Port, _MsgIdMgr, DefaultEnvRecord
 from sys import exc_info
 from Future import Future
 from enum import IntEnum
@@ -28,6 +29,7 @@ from ResultsCache import ResultsCacheKey
 from ConfigGlobals import Max_Msg_Request_Attempts
 from Exceptions import AsyncLocalMaxRetries
 from logging import debug
+from ConcAddr import ConcAddr, ExtAddr
 
 
 
@@ -48,6 +50,7 @@ def ___proxy_make_request(self, ServerAddr, MethodName, *Args, **KwArgs):
     MsgBody = CorpsRequest()
 
     MsgBody.MsgType = CorpsMsgType.ConcRequ
+    MsgBody.MsgId = ResultsCacheKey(my_Ip(), my_Port(), _MsgIdMgr.new())
     MsgBody.ClientAddr = TheConcAddr
     MsgBody.ServerAddr = ServerAddr
     MsgBody.MethodName = MethodName
@@ -57,20 +60,15 @@ def ___proxy_make_request(self, ServerAddr, MethodName, *Args, **KwArgs):
     FutRet = Future()
 
     Attempt = 1
-    MsgIdSet = False        # Want to set this once
     State = ProxyState.CONN
 
     # Enter the state machine
     while Attempt <= Max_Msg_Request_Attempts:
         # $ need to handle connect errors
         if State == ProxyState.CONN:
-            MsgHdlr, MsgId = connect_to_server(ServerAddr, Attempt)
+            MsgHdlr = connect_to_server(ServerAddr)
 
             if MsgHdlr != None:
-                if MsgIdSet == False:
-                    MsgBody.MsgId = ResultsCacheKey(my_Ip(), my_Port(), MsgId)
-                    MsgIdSet = True     # Request init is complete
-
                 State = ProxyState.SEND_REQU
                 continue
 
@@ -111,7 +109,7 @@ def ___proxy_finish_request(MsgHdlr, MsgBody, FutRet, CurrentAttempt):
     # continue in state machine
     while Attempt <= Max_Msg_Request_Attempts:
         if State == ProxyState.CONN:
-            MsgHdlr, MsgId = connect_to_server(MsgBody.ServerAddr, Attempt)     # do not use MsgId...it is invalid
+            MsgHdlr = connect_to_server(MsgBody.ServerAddr)
 
             if MsgHdlr != None:
                 State = ProxyState.SEND_REQU
@@ -151,19 +149,31 @@ def ___proxy_finish_request(MsgHdlr, MsgBody, FutRet, CurrentAttempt):
             f'{MsgBody.ClientAddr} finish__request to {MsgBody.ServerAddr}: {Max_Msg_Request_Attempts} attempts failed!')
 
 
-def connect_to_server(ServerAddr, Attempt):
-    ''' Make a connection and return a MsgHdlr and a Msgid (valid only for 1st attempt) '''
+def connect_to_server(ServerAddr):
+    ''' Make a connection and return a MsgHdlr '''
 
-    TheEnvRecord, MsgId = _EnvTable.get_to_connect(ServerAddr.LocEnvId, Attempt)
+    # For ConcAddrs get the IpAddr and Port from the EnvRecord in the EnvTable
+    if type(ServerAddr) == ConcAddr:
+        TheEnvRecord = _EnvTable.get(ServerAddr.LocEnvId)
 
-    try:
-        NetwHdlr = TheEnvRecord.NetwFactory.new_client_netwhdlr(TheEnvRecord.IPAddr, TheEnvRecord.Port)
+        try:
+            NetwHdlr = TheEnvRecord.NetwFactory.new_client_netwhdlr(TheEnvRecord.IPAddr, TheEnvRecord.Port)
 
-    except:
-        return None, None
+        except:
+            return None
+
+    # For ExtAddrs the IpAddr and Port are contained in it
+    else:
+        TheEnvRecord = DefaultEnvRecord
+
+        try:
+            NetwHdlr = TheEnvRecord.NetwFactory.new_client_netwhdlr(ServerAddr.IpAddr, ServerAddr.Port)
+
+        except:
+            return None
 
     MsgHdlr = TheEnvRecord.MsgHdlrFactory.new_client_msghdlr(NetwHdlr)
-    return MsgHdlr, MsgId
+    return MsgHdlr
 
 
 def send_request_to_server(MsgHdlr, MsgBody):
