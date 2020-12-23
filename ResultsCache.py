@@ -32,7 +32,7 @@ from datetime import datetime, timezone, timedelta
 
 
 
-ResultsCacheKey = namedtuple('ResultsCacheKey', 'IP Port MsgId')
+ResultsCacheKey = namedtuple('ResultsCacheKey', 'Ip Port MsgId')
 
 ResultsCacheValue = namedtuple('ResultsCacheValue', 'TimeStamp Res')
 

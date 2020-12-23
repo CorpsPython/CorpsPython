@@ -49,7 +49,7 @@ class ExtAddr(ConcAddr):
 
 
     def __eq__(self, anExtAddr):
-        if super().__eq__(anExtAddr) and self.IpAddr == anExtAddr.IPAddr and self.Port == anExtAddr.Port:
+        if super().__eq__(anExtAddr) and self.IpAddr == anExtAddr.IpAddr and self.Port == anExtAddr.Port:
             return True
 
         else:
