@@ -53,7 +53,7 @@ class Env(Conc):
         TheEnvRecord = copy(DefaultEnvRecord)
         EnvQueue = queue.Queue()
 
-        TheEnvRecord.NetwFactory.new_connector(TheEnvRecord.IPAddr, EnvQueue)
+        TheEnvRecord.NetwFactory.new_connector(TheEnvRecord.IpAddr, EnvQueue)
         Port = EnvQueue.get()
 
         # Initialize our EnvRecord and register it in the EnvTable
@@ -62,9 +62,9 @@ class Env(Conc):
         _EnvTable.register(EnvId, TheEnvRecord)
 
         # If we are not the CorpsMgr's Env we need to provide the CorpsMgr our
-        #   EnvRecord Spec Tuple: 0: LocEnvId, 1: IPAddr, 2: Port
+        #   EnvRecord Spec Tuple: 0: LocEnvId, 1: IpAddr, 2: Port
         if EnvId != CORPSMGR_ENVID:
-            CorpsMgrQueue.put([EnvId, TheEnvRecord.IPAddr, TheEnvRecord.Port])
+            CorpsMgrQueue.put([EnvId, TheEnvRecord.IpAddr, TheEnvRecord.Port])
 
         # The thread is no longer assigned, so cleanup
         TheThread.TheConcAddr = NullConcAddr
@@ -80,18 +80,18 @@ class Env(Conc):
 
     def init_EnvTable(self, AllEnvMsgList):
         '''
-            Init our EnvTable using a list of EnvRecord Spec Tuples: 0: LocEnvId, 1: IPAddr, 2: Port
+            Init our EnvTable using a list of EnvRecord Spec Tuples: 0: LocEnvId, 1: IpAddr, 2: Port
 
             Ignore for our own which we did in __init__
 
             For now use defaults for MsgHdlrFactory and NetwHdlrFactory
         '''
 
-        for EnvMsgList in AllEnvMsgList: # 0: LocEnvId, 1: IPAddr, 2: Port
+        for EnvMsgList in AllEnvMsgList: # 0: LocEnvId, 1: IpAddr, 2: Port
             EnvId = EnvMsgList[0]
             if EnvId != my_EnvId():
                 TheEnvRecord = copy(DefaultEnvRecord)
-                TheEnvRecord.IPAddr = EnvMsgList[1]
+                TheEnvRecord.IpAddr = EnvMsgList[1]
                 TheEnvRecord.Port = EnvMsgList[2]
                 _EnvTable.register(EnvId, TheEnvRecord)
 

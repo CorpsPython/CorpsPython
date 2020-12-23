@@ -157,7 +157,7 @@ def connect_to_server(ServerAddr):
         TheEnvRecord = _EnvTable.get(ServerAddr.LocEnvId)
 
         try:
-            NetwHdlr = TheEnvRecord.NetwFactory.new_client_netwhdlr(TheEnvRecord.IPAddr, TheEnvRecord.Port)
+            NetwHdlr = TheEnvRecord.NetwFactory.new_client_netwhdlr(TheEnvRecord.IpAddr, TheEnvRecord.Port)
 
         except:
             return None

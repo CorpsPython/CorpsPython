@@ -64,11 +64,11 @@ class CorpsMgr(Conc):
         # Make sure we can be found
         _Addr2Conc.register(self, self.ConcAddr)
 
-        # Build a list of Envs' list of EnvRecord Spec Tuple: 0: LocEnvId, 1: IPAddr, 2: Port
+        # Build a list of Envs' list of EnvRecord Spec Tuple: 0: LocEnvId, 1: IpAddr, 2: Port
         # Ours first, the other Envs as we receive them off the Queue
         EnvRecordSpecs = []
         OurEnvRecord = _EnvTable.get(CORPSMGR_ENVID)
-        EnvRecordSpecs.append([CORPSMGR_ENVID, OurEnvRecord.IPAddr, OurEnvRecord.Port])
+        EnvRecordSpecs.append([CORPSMGR_ENVID, OurEnvRecord.IpAddr, OurEnvRecord.Port])
 
         # Boot all other Envs in this Corps and get their EnvRecord Spec
         # ...Everything is on this Host
