@@ -31,10 +31,10 @@
 
 
 from Conc import Conc
-from ConcAddr import ConcAddr
+from ConcAddr import ConcAddr, ExtAddr
 from EnvRecord import EnvRecord
 from Env import Env, EnvName    # EnvName is dynamically genned by proxy()
-from EnvGlobals import TheThread, NullConcAddr, _ConcIdMgr, _Addr2Conc, DefaultEnvRecord, _EnvTable
+from EnvGlobals import TheThread, NullConcAddr, _ConcIdMgr, _Addr2Conc, DefaultEnvRecord, _EnvTable,  my_Ip, my_Port
 from os import getpid, kill
 from multiprocessing import Process, Queue
 from EnvAddrSpace import MIN_ENVID, MAX_ENVID, CORPSMGR_ENVID
@@ -138,7 +138,10 @@ class Corps(Conc):
         ConcId = _ConcIdMgr.new()
         assert ConcId == CORPS_CONCID, f'Corps has ConcId {ConcId} and not {CORPS_CONCID}'
 
-        self.ConcAddr = ConcAddr(CORPSMGR_ENVID, ConcId, CORPSMGR_ENVID)
+        # For ContCorps
+        #self.ConcAddr = ConcAddr(CORPSMGR_ENVID, ConcId, CORPSMGR_ENVID)
+        # For ExtCorps
+        self.ConcAddr = ExtAddr(CORPSMGR_ENVID, ConcId, CORPSMGR_ENVID, my_Ip(), my_Port())
         super().__init__()
 
         # Make sure thread-local data knows the Conc it's assigned to
