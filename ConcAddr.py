@@ -1,6 +1,6 @@
 
 '''
-    ConcAddr is a Worker's Corps-global reference.
+    ConcAddr is a Worker's Corps-global reference. It is used internal to a Corps.
 
 
     Attributes:
@@ -12,6 +12,11 @@
 
 
     See also Addr2Conc.py and ConcIdMgr.py.
+
+
+    ExtAddr is a ConcAddr with added Ip Addr and Port.  It is used for references external to a Corps.  It usually
+    refers to a Corps but could also be that of any Worker, such as a Conc or Func (when we say it refers to a Corps we
+    are really referring to the Corps Conc, the Conc that fronts for the Corps).
 '''
 
 
@@ -34,3 +39,22 @@ class ConcAddr():
 
     def __repr__(self):
         return f'L{self.LocEnvId}:M{self.MgrEnvId}.{self.ConcId}'
+
+
+class ExtAddr(ConcAddr):
+    def __init__(self, MgrEnvId, ConcId, LocEnvId, IpAddr, Port):
+        super().__init__(MgrEnvId, ConcId, LocEnvId)
+        self.IpAddr = IpAddr
+        self.Port = Port
+
+
+    def __eq__(self, anExtAddr):
+        if super().__eq__(anExtAddr) and self.IpAddr == anExtAddr.IPAddr and self.Port == anExtAddr.Port:
+            return True
+
+        else:
+            return False
+
+
+    def __repr__(self):
+        return f'{super().__repr__()}@{self.IpAddr}:{self.Port}'
