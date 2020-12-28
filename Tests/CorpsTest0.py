@@ -4,7 +4,7 @@
     operations across Env boundaries, using Futures, executing multiple concurrent requests, etc)
 
     The Corps creates a list of globals services, distributing them amongst the Envs.  It also creates a list of
-    clients, also distributing them amongst the Envs.  All of the services and clients are Concs (a type of Worker).
+    clients, also distributing them amongst the Envs.  All of the services and clients are Concs.
 
     THe Corps then concurrently requests the clients run their tests.  The completion of the tests is handled as a
     modified form of sleepy waiting - each time the Corps is active it tests each previously uncompleted Future for
@@ -29,7 +29,7 @@
 
 from Conc import Conc
 from Corps import Corps
-from Workers import LocType, create_Workers, load_Corps
+from Workers import LocType, create_Concs, create_Corps
 from sys import exc_info
 from Future import NoRet, wait_all, wait_next
 from EnvGlobals import my_Host, my_Ip, my_Port
@@ -64,7 +64,7 @@ class Client0(Conc):
         Client0 is a Conc that runs test against a list of global services ("servers") and then against a list
         of services private to each client.
 
-        It exercises create_Workers() by creating all of its private services at once on each Env, for a total of
+        It exercises create_Concs() by creating all of its private services at once on each Env, for a total of
         NumEnvs times NumClientServers.
     '''
 
@@ -81,7 +81,7 @@ class Client0(Conc):
 
 
         if self.NumClientsServers > 0:
-            self.ClientsServers = create_Workers(self.my_Name(), Service0, LocType=LocType.PerEnv, \
+            self.ClientsServers = create_Concs(self.my_Name(), Service0, LocType=LocType.PerEnv, \
                                                                                         Num=self.NumClientsServers)
 
         print(f'Client {self.my_Name()} ready for testing')
@@ -164,7 +164,7 @@ class Corps0(Corps):
         It then concurrently requests all of the clients to run their tests.  It utilizes a modified sleepy waiting to
         incrementally get and process results and then wait for more results to complete.
 
-        Corps0 exercises create_Workers() two ways.  For the services it allows create_Workers to choose which Env
+        Corps0 exercises create_Concs() two ways.  For the services it allows create_Concs to choose which Env
         the services will create on.  For the clients the choice of Env is explicit.
     '''
 
@@ -184,11 +184,11 @@ class Corps0(Corps):
 
         if self.NumServers > 0:
             for i in range(self.NumEnvs):
-                NewServers = create_Workers(self.my_Name(), Service0, LocType=LocType.Auto, Num=self.NumServers)
+                NewServers = create_Concs(self.my_Name(), Service0, LocType=LocType.Auto, Num=self.NumServers)
                 self.Servers.extend(NewServers)
 
         for env in range(self.NumEnvs):
-            NewClients = create_Workers(self.my_Name(), Client0, self.Servers, self.NumEnvs, \
+            NewClients = create_Concs(self.my_Name(), Client0, self.Servers, self.NumEnvs, \
                 self.NumClientsServers, self.NumClientIters, LocType=LocType.EnvId, LocVal=env, Num=self.NumClients)
             self.Clients.extend(NewClients)
 
@@ -232,12 +232,11 @@ def run_CorpsTest0(Version, ConfigFiles, P):
     '''
         Driver function (P is a CorpsTestParm).
 
-        Runs Corps0 in this process (which creates new processes for all of the Envs excepting the one Corps0 runs in).
     '''
 
     print('\n\nT e s t   0\n')
 
-    TheCorps0 = load_Corps(Corps0, P.NumEnvs, P.NumGlobalServers, P.NumClients, P.NumClientsServers, \
+    TheCorps0 = create_Corps(Corps0, P.NumEnvs, P.NumGlobalServers, P.NumClients, P.NumClientsServers, \
                                                                             P.NumClientIters, ConfigFiles=ConfigFiles)
 
     print(f'\n{Version} \nRunning on Host {my_Host()} ({my_Ip()}) Port {my_Port()}\n')

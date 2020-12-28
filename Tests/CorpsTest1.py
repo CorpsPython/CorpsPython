@@ -28,7 +28,7 @@
 
 from Conc import Conc
 from Corps import Corps
-from Workers import create_Workers, load_Corps
+from Workers import create_Concs, create_Corps
 from sys import exc_info
 from time import sleep
 from Future import NoRet, wait_all
@@ -300,7 +300,7 @@ class Corps1(Corps):
         It then concurrently requests all of the clients to run their tests.  It utilizes a modified sleepy waiting to
         incrementally get and process results and then wait for more results to complete.
 
-        Corps1 utilizes the defaults for create_Workers(), automatically choosing the Env of creation and creating a
+        Corps1 utilizes the defaults for create_Concs(), automatically choosing the Env of creation and creating a
         single Conc at time.  By iterating over the number of Envs and sequentially creating a service followed by a
         client we can evenly distribute Concs across Envs and most of the time have the paired clients and servers in
         different Envs.
@@ -318,8 +318,8 @@ class Corps1(Corps):
         self.Clients = []
 
         for i in range(NumEnvs):
-            self.Servers.extend(create_Workers({self.my_Name()}, Service1))
-            self.Clients.extend(create_Workers({self.my_Name()}, Client1))
+            self.Servers.extend(create_Concs({self.my_Name()}, Service1))
+            self.Clients.extend(create_Concs({self.my_Name()}, Client1))
 
         print(f'\nTestCorps1 initialized')
         self.start()
@@ -369,12 +369,11 @@ def run_CorpsTest1(Version, ConfigFiles, P):
     '''
         Driver function (P is a CorpsTestParm).
 
-        Runs Corps1 in this process (which creates new processes for all of the Envs excepting the one Corps1 runs in).
     '''
 
     print('\n\nT e s t   1\n')
 
-    TheCorps1 = load_Corps(Corps1, P.NumEnvs, P.NumClientIters, ConfigFiles=ConfigFiles)
+    TheCorps1 = create_Corps(Corps1, P.NumEnvs, P.NumClientIters, ConfigFiles=ConfigFiles)
 
     print(f'\n{Version} \nRunning on Host {my_Host()} ({my_Ip()}) Port {my_Port()}\n')
     print(f'Pickle:  {versions()}')
