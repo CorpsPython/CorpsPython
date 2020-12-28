@@ -6,11 +6,12 @@ How easy is it to code the obligatory Hello World program?
 
 Let's dig in.
 
-All Corps Python Workers are created by a Worker Factory in the Workers module.
+All Corps Python Workers are created by a Worker Factory in the Workers module.  Our program will be implemented as
+a Corps, which is a type of Worker.
 
-To load our Corps we call Workers's load_Corps:
+To load our Corps we call Workers's create_Corps:
 
-    load_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs)
+    create_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs)
 
 where:
 
@@ -21,14 +22,14 @@ where:
 If we ignore the Config files for now and just use defaults, and our HelloWorld Corps has no __init__ params we can
 simply call:
 
-    OurCorps = load_Corps(HelloWorld)
+    OurCorps = create_Corps(HelloWorld)
 
-The return from load_Corps is a Name.  It has the same interface as the Worker and may be passed as an arg.
+The return from create_Corps is a Name.  It has the same interface as the Corps and may be passed as an arg.
 
-But a Name is not a regular attribute - it is a proxy for the Worker.
+But a Name is not a regular attribute - it is a proxy for the Corps.
 
-By invoking one of the Worker's methods via a Name we are asking Corps Python's runtime system to build and send
-a message to the Worker, execute the method, and build a return message and send it back to us.
+By invoking one of the Corps's methods via a Name we are asking Corps Python's runtime system to build and send
+a message to the Corps, execute the method, and build a return message and send it back to us.
 
 All of this happens transparently.
 
@@ -87,10 +88,10 @@ class HelloWorld(Corps):
 
 if __name__ == '__main__':
 
-    from Workers import load_Corps
+    from Workers import create_Corps
 
 
-    OurCorps = load_Corps(HelloWorld)
+    OurCorps = create_Corps(HelloWorld)
 
     FutRet = OurCorps.say_hello()
     print(f'\n{FutRet.Ret}\n')

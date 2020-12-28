@@ -39,8 +39,8 @@ So we will skip any further pursuit of a traditional Old World solution and move
 N e w   W o r l d
 
 To accomplish a lot of work over many processors on many hosts we will need a lot of Workers who can operate in
-parallel.  We will rely on a type of Worker called a Conc, which is the concurrent (asynchronous) equivalent of a
-regular, class-based Python object.
+parallel.  We will rely on a type of Worker called a Conc, which is the concurrent equivalent of a regular, class-based
+Python object.
 
 Concurrent entities can be differentiated by their "grain-size".  The floating point numbers in vectors that GPUs
 operate on are small-grained.  Processes have a large grain-size (and despite their name, so are Microservices),
@@ -54,6 +54,14 @@ to running them in parallel would be dwarfed by the costs of creating them and c
 So why did we choose a Conc for our "a lot of Workers"?  Because they are a medium grain-sized entity and that is
 probably the appropriate grain-size for doing a regex search of a single file.
 
+Corps, on the other hand, are large-grained.  Each application, service, or microservice must have at least one Corps,
+but could be comprised of many if needed.
+
+Corps are internally (and transparently) constructed from one or more Environments, or Envs, where Concs and other
+Workers live and run.  Each Env is built inside of a Process, located somewhere in the configuration of hosts and
+processors.  When a Corps is deployed you can choose the number of Envs (and therefore how much large-grained concur-
+rency, and possibly hardware, to use to run the Corps).
+
 We can describe the Concs as hosted by, or contained within, the Corps, who is considered their Manager, or Mgr.
 And if one of those Concs creates other Workers they are hosted by, or contained within, the creating Conc, and the
 creating Conc is their Mgr, and so on.
@@ -61,11 +69,6 @@ creating Conc is their Mgr, and so on.
 In this manner, among others, we can achieve a virtually unlimited degree of concurrency and therefore parallelism.
 We also have a natural management hierarchy which is useful for behaviors such as orderly cleanup and shutdowns and
 Auto-Healing.
-
-Corps, on the other hand are large-grained.  The Concs are hosted by the Corps and run inside the various Envs of
-the Corps.  Each Env has an adaptively-sized pool of threads that perform various tasks for the Corps Python runtime
-(think of it as a concurrent operating system inside of each Corps) including executing the code for the Concs.  Each
-Env operates inside of a process and so is itself large-grained.
 
 Defining our Searcher Conc is straightforward.  If the Old World search_file had been a method of a Searcher class
 we would have only needed to create a new class which inherited from both Searcher and Conc.
@@ -111,13 +114,13 @@ Our RegexServer Corps will create all the Searcher Concs in __init__:
         def __init__(self, NumSearchers):
             super().__init__()
 
-            self.Searchers = create_Workers(self.my_Name(), Searcher, LocType=LocType.PerEnv, Num=NumSearchers)
+            self.Searchers = create_Concs(self.my_Name(), Searcher, LocType=LocType.PerEnv, Num=NumSearchers)
 
 
 The NumSearchers __init__ arg is the number of Searchers we want to create per Env.  We chose that because the
-Workers factory function create_Workers has that as an option for the location type and unit.
+Workers factory function create_Concs has that as an option for the location type and unit.
 
-The create_Workers interface is documented in the Corps Python Reference.  But let's take a quick look.
+The create_Concs interface is documented in the Corps Python Reference.  But let's take a quick look.
 
 The two required arguments are the Manager Name, which is the Corp's Name, and the Worker's class.  Any positional
 args to be passed to the Workers' __init__ should be placed after them.
@@ -253,7 +256,7 @@ Here is the full listing for RegexServer's search_files:
 Our __main__ is fairly simple.  After loading a RegexServer Corps and asynchronously issuing the request to
 search_files, it simply blocks waiting for the results and iterates over them and prints them:
 
-    RegexCorps = load_Corps(RegexServer, NumSearchers)
+    RegexCorps = create_Corps(RegexServer, NumSearchers)
 
     FutRet = RegexCorps.search_files(Dir, CompiledRegex)
 
@@ -274,10 +277,10 @@ search_files, it simply blocks waiting for the results and iterates over them an
     RegexCorps.exit()
 
 
-The full signature for load_Corps is load_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs) where ConfigFiles is a
+The full signature for create_Corps is create_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs) where ConfigFiles is a
 list of Config file names and *args and **kwargs are regular parameters to the Corps class's __init__.  We are using
 the defaults for the ConfigFiles list and the keyword args, but pass NumSearchers as an arg to RegexServer __init__.
-See the Corps Python Reference for the Workers' load_Corps and the Config file documentation.
+See the Corps Python Reference for the Workers' create_Corps and the Config file documentation.
 
 Like Dir and Regex, NumSearchers (per Env) is simply an attribute in __main__ that is hardcoded now but could be
 user-provided in an appropriate front-end.  But big questions remain: How many Hosts?  How many Envs?  How many
@@ -298,7 +301,7 @@ from os import listdir
 from os.path import isfile, isdir, join
 from Corps import Corps
 from Conc import Conc
-from Workers import load_Corps, create_Workers, LocType
+from Workers import create_Corps, create_Concs, LocType
 from Future import wait_all
 from sys import exc_info
 from Exceptions import AsyncLocalMaxRetries, AsyncRemoteMaxRetries
@@ -370,7 +373,7 @@ class RegexServer(Corps):
 
         super().__init__()
 
-        self.Searchers = create_Workers(self.my_Name(), Searcher, LocType=LocType.PerEnv, Num=NumSearchers)
+        self.Searchers = create_Concs(self.my_Name(), Searcher, LocType=LocType.PerEnv, Num=NumSearchers)
 
 
     def search_files(self, Dir, CompiledRegex):
@@ -422,7 +425,7 @@ if __name__ == '__main__':
     CompiledRegex = compile(Regex)
 
 
-    RegexCorps = load_Corps(RegexServer, NumSearchers)
+    RegexCorps = create_Corps(RegexServer, NumSearchers)
 
     FutRet = RegexCorps.search_files(Dir, CompiledRegex)
 

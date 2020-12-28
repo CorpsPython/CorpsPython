@@ -20,7 +20,7 @@ class ConcMeta(type):
         # create the instance of the Conc subclass
         obj = cls.__new__(cls, *args, **kwargs)
 
-        # remove kwargs intended for Conc and Corps and store them
+        # remove kwargs intended for Conc and Corps and store them (to hide from end-developers)
         ConcAddr = 'ConcAddr'
         if ConcAddr in kwargs:
             obj.ConcAddr = kwargs[ConcAddr]

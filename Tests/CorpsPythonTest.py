@@ -64,7 +64,7 @@ if __name__ == '__main__':
     os.environ['NumEnvs'] = str(P.NumEnvs)
 
     ConfigFiles = ['Tests/CorpsTestConfig.py']
-    CorpsPythonVersion = 'C o r p s   P y t h o n   0 . 1 . 0'
+    CorpsPythonVersion = 'C o r p s   P y t h o n   0 . 1 . 9'
 
 
     print(f'\n{CorpsPythonVersion}   T e s t i n g   S t a r t e d')
@@ -72,8 +72,6 @@ if __name__ == '__main__':
     # Each test is run as a separate process from this script.
     # The tests are run sequentially - they run to completion before beginning the next one.
     for Test in Tests:
-        TestProcess = Process(target=Test, args=(CorpsPythonVersion, ConfigFiles, P))
-        TestProcess.start()
-        TestProcess.join()
+        Test(CorpsPythonVersion, ConfigFiles, P)
 
     print(f'\n{CorpsPythonVersion}   T e s t i n g   C o m p l e t e d')
