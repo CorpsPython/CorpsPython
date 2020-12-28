@@ -116,7 +116,8 @@ next_file, and prints all of the file's matches if any are found.
 
 We'll assume that an approopriate front-end such as a CLI, GUI, or REST calls us in a fully-deployable version of
 our program.  For demonstration's sake we will just hardcode the start directory and regex as attributes in our
-script (which is a stand-in for the deployable-version's front-end, at least for now).
+script (which is a stand-in for the deployable-version's front-end, at least for now).  If you want to run it just
+edit Dir and Regex in __main__ for your test environment.
 
 Here is the full listing:
 

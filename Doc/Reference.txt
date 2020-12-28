@@ -1,16 +1,16 @@
 
 
-C o r p s   P y t h o n   V e r s i o n    0 . 1
+C o r p s   P y t h o n   V e r s i o n   0 . 2 . 0   R e f e r e n c e
 
 
 W o r k e r s
 
 
-    l o a d _ C o r p s ( )
+    c r e a t e _ C o r p s ( )
 
-    Loads a Corps from a script.
+    Creates a Corps.
 
-    load_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs)
+    create_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs)
 
         CorpsClass is the class of the Corps to load.
 
@@ -22,27 +22,26 @@ W o r k e r s
 
 
 
-    c r e a t e _ W o r k e r s ( )
+    c r e a t e _ C o n c s ( )
 
-    Factory function to create Workers.  Only the creation of Concs inside of a Corps by a Corps or another Conc
-    are supported at this point.
+    Factory function to create Concs.
 
-    create_Workers(Mgr, WorkerClass, *args, LocType=LocType.Auto, LocVal=None, Num=1, **kwargs)
+    create_Concs(Mgr, ConcClass, *args, LocType=LocType.Auto, LocVal=None, Num=1, **kwargs)
 
-        Returns a list of Names of Workers.
+        Returns a list of Names of Concs.
 
-        Mgr is the Manager of the Worker.  Caller should use self.my_Name() at this time.
+        Mgr is the Manager of the Concs.  Caller should use self.my_Name() at this time.
 
         LocType
 
             LocType.EnvId
-                Create Num Workers in caller-chosen Env
+                Create Num Concs in caller-chosen Env
 
             LocType.Auto
-                Create Num Workers in Corps Python-chosen Env
+                Create Num Concs in Corps Python-chosen Env
 
             LocType.PerEnv
-                Create Num Workers in every Env
+                Create Num Concs in every Env
 
         LocVal
             Integer
@@ -53,9 +52,9 @@ W o r k e r s
                 For LocType=LocType.Auto or LocType.PerEnv
 
         Num:
-            Number of Workers per Loc
+            Number of Concs per Loc
 
-        *args and **kwargs are regular parameters to Worker class's __init__
+        *args and **kwargs are regular parameters to Concs class's __init__
 
 
 
@@ -193,9 +192,9 @@ E x c e p t i o n s
 
 C o n f i g  F i l e s
 
-    Config Global attributes for each instantiated Corps.
+    Config global attributes for each instantiated Corps.
 
-    Defaults can be overridden by user-supplied Config files passed to load_Corps() in Workers.py.
+    Defaults can be overridden by user-supplied Config files passed to create_Corps() in Workers.py.
 
     The Config files are regular Python files with assignments to attributes documented here.
 
