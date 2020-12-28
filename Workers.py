@@ -1,10 +1,10 @@
 
 '''
-    l o a d _ C o r p s ( )
+    c r e a t e _ C o r p s ( )
 
-    Loads a Corps from a script.
+    Creates a Corps.
 
-    load_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs)
+    create_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs)
 
         CorpsClass is the class of the Corps to load.
 
@@ -16,27 +16,26 @@
 
 
 
-    c r e a t e _ W o r k e r s ( )
+    c r e a t e _ C o n c s ( )
 
-    Factory function to create Workers.  Only the creation of Concs inside of a Corps by a Corps or another Conc
-    are supported at this point.
+    Factory function to create Concs.
 
-    create_Workers(Mgr, WorkerClass, *args, LocType=LocType.Auto, LocVal=None, Num=1, **kwargs)
+    create_Concs(Mgr, ConcClass, *args, LocType=LocType.Auto, LocVal=None, Num=1, **kwargs)
 
-        Returns a list of Names of Workers.
+        Returns a list of Names of Concs.
 
-        Mgr is the Manager of the Worker.  Caller should use self.my_Name() at this time.
+        Mgr is the Manager of the Concs.  Caller should use self.my_Name() at this time.
 
         LocType
 
             LocType.EnvId
-                Create Num Workers in caller-chosen Env
+                Create Num Concs in caller-chosen Env
 
             LocType.Auto
-                Create Num Workers in Corps Python-chosen Env
+                Create Num Concs in Corps Python-chosen Env
 
             LocType.PerEnv
-                Create Num Workers in every Env
+                Create Num Concs in every Env
 
         LocVal
             Integer
@@ -47,9 +46,9 @@
                 For LocType=LocType.Auto or LocType.PerEnv
 
         Num:
-            Number of Workers per Loc
+            Number of Concs per Loc
 
-        *args and **kwargs are regular parameters to Worker class's __init__
+        *args and **kwargs are regular parameters to Conc class's __init__
 
 '''
 
@@ -57,33 +56,29 @@
 '''
     Future Ideas:
     
-        - create_Corps(Mgr, CorpsClass, *args, LocType=LocType.Auto, LocVal=None, Num=1, Ext=False, ConfigFiles=[], \
-                                                                                                            **kwargs)
-
-            - Full interface to create Cont Corps and Ext Corps
-
-            - Extends create_workers api
-
-            - Not implemented yet
+        - create_Corps()
 
             - Ext=False for Cont Corps, True for Ext Corps
 
-            - ConfigFiles=List of Config file names
+            - Tag=TagName
+                - default 'None'
 
+            - Mgr=Name
+                - default is auto chosen as creating Corps
+                
             - Loc=
-                - Same ones as for create_worker
-                - For Ext Corps EnvId is invalid
-                - Extra Loc values:
-                    - Host=name/ip
-                    - Cluster=Name
-                        - Name denotes a Conc or Corps?
-                        - type of Auto Loc (that restricts it)
-                  - Region=Name
-                        - Name denotes a Conc or Corps?
-                        - type of Auto Loc (that restricts it)
-
-            - Num=
-                - Same ones as for create_worker
+                LocType.Auto LocVal=None
+                    -default
+                                
+                LocType.Host LocVal=name/ip
+                
+                LocType.Cluster LocVal=ClusterName
+                    - Name denotes a Conc or Corps?
+                    - type of Auto Loc (that restricts it)
+                    
+                LocType.Region LocVal=RegionName
+                     - Name denotes a Conc or Corps?
+                    - type of Auto Loc (that restricts it)
 
 
         - delete_Workers()
@@ -133,40 +128,75 @@
 
 
 from inspect import stack, getmodule
-from ConcAddr import ConcAddr
+from ConcAddr import ConcAddr, ExtAddr
 from Name import proxy, Name
 from Env import EnvName    # EnvName dynamically genned by proxy()
-from EnvGlobals import _ConcIdMgr, my_EnvId, _Addr2Conc, _EnvTable
+from EnvGlobals import _ConcIdMgr, my_EnvId, _Addr2Conc, _EnvTable, my_Port, my_Ip
 from EnvAddrSpace import CORPSMGR_ENVID
-from ConcIdMgr import ENVMGR_CONCID
+from ConcIdMgr import ENVMGR_CONCID, CORPS_CONCID
 from enum import IntEnum
 from Conc import Conc
 from Corps import Corps
+from sys import exc_info
+from Exceptions import AsyncExecutionError
+from traceback import format_exception
+from importlib import import_module
+from multiprocessing import Process, Queue
 
 
 
-def load_Corps(ConcClass, *args, **kwargs):
-    ''' script-level support for loading top-level Corps '''
+def create_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs):
+    ''' create an ExtCorps from a script or an ExtCorps or ContCorps from another Corps '''
 
-    assert issubclass(ConcClass, Corps) == True, f'{ConcClass.__name__} is not a Corps'
+    assert issubclass(CorpsClass, Corps) == True, f'{CorpsClass.__name__} is not a Corps'
 
     frm = stack()[1]
     CallingModule = getmodule(frm[0])
 
-    ConcClassInModule = getattr(CallingModule, ConcClass.__name__)
+    # Read and remove kwargs meant for this function (i.e. not to be passed on to new Corps)
+    #   LocType, LocVal, ?
 
-    ConfigFiles = 'ConfigFiles'
-    if ConfigFiles not in kwargs:
-        kwargs[ConfigFiles] = []
+    WorkerQueue = Queue()
 
-    NewConc = ConcClassInModule(*args, **kwargs)
-    NewConcAddr = NewConc.ConcAddr
+    # Store kwargs for new Corps (and will be processed by ConcMeta)
+    #   Tag, Ext/Cont, ?
+    kwargs['ConfigFiles'] = ConfigFiles
 
-    ConcClassProxy = proxy(ConcClass, ConcClass.__name__+'Name', CallingModule)
+    # Create on this Host
+    NewCorpsProcess = Process(target=rem2loc_create_Corps, \
+                              args=(CallingModule.__name__, CorpsClass.__name__, WorkerQueue, *args), kwargs=kwargs)
+    NewCorpsProcess.start()
+
+    NewCorpsData = WorkerQueue.get()
+    NewCorpsIp = NewCorpsData[0]
+    NewCorpsPort = NewCorpsData[1]
+
+    NewConcAddr = ExtAddr(CORPSMGR_ENVID, CORPS_CONCID, CORPSMGR_ENVID, NewCorpsIp, NewCorpsPort)
+
+    ConcClassProxy = proxy(CorpsClass, CorpsClass.__name__+'Name', CallingModule)
     NewProxy = ConcClassProxy(NewConcAddr)
-    NewName = Name(NewProxy, ConcClass.__name__, CallingModule.__name__)
+    NewName = Name(NewProxy, CorpsClass.__name__, CallingModule.__name__)
 
     return NewName
+
+
+def rem2loc_create_Corps(CallingModule, CorpsClass, WorkerQueue, *args, **kwargs):
+    '''
+        Create a Corps in a new process
+
+        CallingModule and ConcClass are text names
+    '''
+
+    # Find the Class object
+    TheCallingModule = import_module(CallingModule)
+    ConcClassInModule = getattr(TheCallingModule, CorpsClass)
+
+    # Create the Corps
+    NewConc = ConcClassInModule(*args, **kwargs)
+
+    # Return data to calling process
+    WorkerQueue.put([my_Ip(), my_Port()])
+    return True
 
 
 def __create_local_Conc(Mgr, CallingModule, ConcClass, *args, **kwargs):
@@ -203,10 +233,18 @@ def __create_remote_Conc(Mgr, RemoteEnvId, CallingModule, ConcClass, *args, **kw
     EnvConcAddr = ConcAddr(CORPSMGR_ENVID, ENVMGR_CONCID, RemoteEnvId)
     RemoteEnv = EnvName(EnvConcAddr)
 
-    # call rem2loc_create_Conc
+    # request object creation in remote Env
     kwargs['ConcAddr'] = NewConcAddr
     FutRes = RemoteEnv.rem2loc_create_Conc(NewConcAddr, CallingModule.__name__, ConcClass.__name__, *args, **kwargs)
-    Ret = FutRes.Ret
+
+    try:
+        Ret = FutRes.Ret
+
+    except:
+        ei = exc_info()
+        ftb = format_exception(ei[0], ei[1], ei[2])
+        raise AsyncExecutionError(ei[0].__name__, ei[1], ''.join(ftb))
+        return None
 
     return NewName
 
@@ -217,8 +255,8 @@ class LocType(IntEnum):
     PerEnv = 2
 
 
-def __create_Workers__(Mgr, LocType, LocVal, Num, CallingModule, ConcClass, *args, **kwargs):
-    ''' Internal create Workers '''
+def __create_Concs__(Mgr, LocType, LocVal, Num, CallingModule, ConcClass, *args, **kwargs):
+    ''' Internal create Concs '''
 
     from ConfigGlobals import NumEnvs
 
@@ -276,12 +314,12 @@ def __create_Workers__(Mgr, LocType, LocVal, Num, CallingModule, ConcClass, *arg
 
 
 
-def create_Workers(Mgr, ConcClass, *args, LocType=LocType.Auto, LocVal=None, Num=1, **kwargs):
+def create_Concs(Mgr, ConcClass, *args, LocType=LocType.Auto, LocVal=None, Num=1, **kwargs):
     '''
-        External interface for creating Workers
+        External interface for creating Concs
 
-        Identifies the calling module the Worker class defined in or imported to and calls
-        the internal create Workers function
+        Identifies the calling module the Conc class defined in or imported to and calls
+        the internal create Concs function
     '''
     '''    
         better formulation of CallingModule?:
@@ -291,6 +329,6 @@ def create_Workers(Mgr, ConcClass, *args, LocType=LocType.Auto, LocVal=None, Num
     frm = stack()[1]
     CallingModule = getmodule(frm[0])
 
-    return __create_Workers__(Mgr, LocType, LocVal, Num, CallingModule, ConcClass, *args, **kwargs)
+    return __create_Concs__(Mgr, LocType, LocVal, Num, CallingModule, ConcClass, *args, **kwargs)
 
 

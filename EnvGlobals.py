@@ -54,7 +54,6 @@ def set_MyPort(Port):
 
 def my_Port():
     global MyPort
-    assert MyPort != None, "MyPort not initialzed"
     return MyPort
 
 
