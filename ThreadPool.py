@@ -9,7 +9,7 @@
     Each thread, a PoolThread, loops on the ThreadPool's get_cmd() and simply executes the cmd.
 
     The Worker's all run on a PoolThread.  The thread has a UsesA relationship with the Worker, with the Worker's
-    main() executed by the thread (TcpConnector places RequestRelay() as the cmd which calls the Worker's main()).
+    main() executed by the thread (TcpConnector places MsgRelay() as the cmd which calls the Worker's main()).
     The thread's next get_cmd() may result in its being assigned to a different Worker.
 
     The size of the ThreadPool begins at (Config variable) ThreadPool_MinThreads.
