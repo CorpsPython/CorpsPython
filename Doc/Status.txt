@@ -2,10 +2,11 @@
 
 P r o j e c t   S t a t u s
 
-The current release version of Corps Python, 0.1.0, should be considered a Developer's Evaluation version.
+The current release version of Corps Python, 0.1.0, should be considered a Developer's Evaluation version.  It is
+located at github.com/CorpsPython/CorpsPython-Release0.1.0.
 
 It is a release version and is closed to new development.  The latest version currently under development can be found
-at github.com/DavidAyer/CorpsPython.
+at github.com/CorpsPython/CorpsPython.
 
 Prominent features such as multi-host Corps, Python functions as Workers (Funcs), multi-Corps interoperability
 (both External and Contained, private, Corps), Auto-Scaling, Auto-Healing, etc. are not yet operational.
