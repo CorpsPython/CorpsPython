@@ -73,7 +73,7 @@ class __Conc():
         '''
             Schedules main loop.
 
-            Messages can be received (i.e. main scheduled) without this being called via RequestRelay.
+            Messages can be received (i.e. main scheduled) without this being called via MsgRelay.
 
             Must be called for Conc to run without a message being received first.
         '''

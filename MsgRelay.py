@@ -13,23 +13,23 @@ from logging import debug, error
 
 
 
-def RequestRelay(MsgHdlr, TheAddr2Conc):
+def MsgRelay(MsgHdlr, TheAddr2Conc):
     MsgBody = None
     try:
         MsgBody = MsgHdlr.rec_msg()
 
     except:
-        debug(f'RequestRelay: Exception\n\t{sys.exc_info()[1]}')
+        debug(f'MsgRelay: Exception\n\t{sys.exc_info()[1]}')
         MsgHdlr.close()
         return
 
     if MsgBody == None:
-        debug(f'RequestRelay: Error receiving Request')
+        debug(f'MsgRelay: Error receiving Request')
         MsgHdlr.close()
         return
 
-    assert type(MsgBody) == CorpsRequest, "RequestRelay: MsgBody type not CorpsRequest"
-    assert MsgBody.MsgType == CorpsMsgType.ConcRequ, 'RequestRelay: Msg Type not ConcRequ'
+    assert type(MsgBody) == CorpsRequest, "MsgRelay: MsgBody type not CorpsRequest"
+    assert MsgBody.MsgType == CorpsMsgType.ConcRequ, 'MsgRelay: Msg Type not ConcRequ'
 
     MsgBody.MsgHdlr = MsgHdlr     # Conc will need this to return response to Client
 
@@ -37,7 +37,7 @@ def RequestRelay(MsgHdlr, TheAddr2Conc):
         aConc = TheAddr2Conc.getConc(MsgBody.ServerAddr)
 
     except:
-        error(f'Request Relay: Exception {MsgBody.ServerAddr} Not Found\n\t{sys.exc_info()[1]}')
+        error(f'MsgRelay: Exception {MsgBody.ServerAddr} Not Found\n\t{sys.exc_info()[1]}')
         MsgHdlr.close()
         return
 
