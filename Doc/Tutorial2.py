@@ -114,7 +114,7 @@ Our RegexServer Corps will create all the Searcher Concs in __init__:
         def __init__(self, NumSearchers):
             super().__init__()
 
-            self.Searchers = create_Concs(self.my_Name(), Searcher, LocType=LocType.PerEnv, Num=NumSearchers)
+            self.Searchers = create_Concs(Searcher, LocType=LocType.PerEnv, Num=NumSearchers)
 
 
 The NumSearchers __init__ arg is the number of Searchers we want to create per Env.  We chose that because the
@@ -122,8 +122,8 @@ Workers factory function create_Concs has that as an option for the location typ
 
 The create_Concs interface is documented in the Corps Python Reference.  But let's take a quick look.
 
-The two required arguments are the Manager Name, which is the Corp's Name, and the Worker's class.  Any positional
-args to be passed to the Workers' __init__ should be placed after them.
+The required argument is the Conc's class.  Any positional args to be passed to the Workers' __init__ should be placed
+after them.
 
 Here we are specifying non-default keyword args for LocType and Num.  Keyword args for the Workers's __init__ can
 be placed anywhere amongst them (before, between, after, etc).  We have no args or kwargs for Searcher itself.
@@ -373,11 +373,11 @@ class RegexServer(Corps):
 
         super().__init__()
 
-        self.Searchers = create_Concs(self.my_Name(), Searcher, LocType=LocType.PerEnv, Num=NumSearchers)
+        self.Searchers = create_Concs(Searcher, LocType=LocType.PerEnv, Num=NumSearchers)
 
 
     def search_files(self, Dir, CompiledRegex):
-        ''' Search all files in Dir and its sub-diectories for the compiled regex '''
+        ''' Search all files in Dir and its sub-directories for the compiled regex '''
 
         FutRets = []
         AllMatches = []
