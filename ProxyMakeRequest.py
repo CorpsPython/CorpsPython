@@ -20,8 +20,10 @@
 '''
 
 
+
 from CorpsMsg import *
-from EnvGlobals import TheThread, _EnvTable, _ThreadPool, my_Ip, my_Port, _MsgIdMgr, DefaultEnvRecord
+from EnvGlobals import TheThread, _EnvTable, _ContCorpsEnvTable, _ExtCorpsEnvTable, _ThreadPool, my_Ip, my_Port, \
+    _MsgIdMgr, DefaultEnvRecord
 from sys import exc_info
 from Future import Future
 from enum import IntEnum
@@ -30,6 +32,7 @@ from ConfigGlobals import Max_Msg_Request_Attempts
 from Exceptions import AsyncLocalMaxRetries
 from logging import debug
 from ConcAddr import ConcAddr, ExtAddr
+from EnvAddrSpace import *
 
 
 
@@ -45,6 +48,9 @@ def ___proxy_make_request(self, ServerAddr, MethodName, *Args, **KwArgs):
 
     TheConcAddr = TheThread.TheConcAddr     # the client Conc whose Thread is running and who called the proxy
 
+    from EnvGlobals import NullConcAddr
+    if TheConcAddr == NullConcAddr:
+        print(f'proxy: Null ConcAddr on request to {ServerAddr} for {MethodName}()')
 
     # Initialize a request
     MsgBody = CorpsRequest()
@@ -154,7 +160,24 @@ def connect_to_server(ServerAddr):
 
     # For ConcAddrs get the IpAddr and Port from the EnvRecord in the EnvTable
     if type(ServerAddr) == ConcAddr:
-        TheEnvRecord = _EnvTable.get(ServerAddr.LocEnvId)
+        LocEnvId = ServerAddr.LocEnvId
+
+        # Select the appropriate EnvTable
+        if CORPSMGR_ENVID <= LocEnvId <= MAX_ENVID:
+            TheEnvTable = _EnvTable
+
+        elif MIN_EXT_CORPS_ENVID <= LocEnvId <= MAX_EXT_CORPS_ENVID:
+            print(f'connect to server: ExtCorps {ServerAddr}')
+            TheEnvTable = _ExtCorpsEnvTable
+
+        elif MIN_CONT_CORPS_ENVID <= LocEnvId <= MAX_CONT_CORPS_ENVID:
+            print(f'connect to server: ContCorps {ServerAddr}')
+            TheEnvTable = _ContCorpsEnvTable
+
+        else:
+            raise ValueError(f'connect_to_server: Bad ServerAddr {ServerAddr}')
+
+        TheEnvRecord = TheEnvTable.get(LocEnvId)
 
         try:
             NetwHdlr = TheEnvRecord.NetwFactory.new_client_netwhdlr(TheEnvRecord.IpAddr, TheEnvRecord.Port)
