@@ -112,7 +112,7 @@ class __Conc():
                     ei = exc_info()
                     ftb = format_exception(ei[0], ei[1], ei[2])
                     ftb[1] = f'  Async Execution Exception: {self.ConcAddr} executing {MsgBody.MethodName}() for ' + \
-                                                                                                f'{MsgBody.ClientAddr}:\n'
+                                                                                            f'{MsgBody.ClientAddr}:\n'
                     Ret = (ei[0].__name__, ei[1], ''.join(ftb))
                     RetBody.RetType = CorpsRetType.AsyncExecutionExc
 
