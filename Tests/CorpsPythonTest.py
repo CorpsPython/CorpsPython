@@ -22,9 +22,9 @@
 
 
 
-from multiprocessing import Process
 from Tests.CorpsTest0 import run_CorpsTest0
 from Tests.CorpsTest1 import run_CorpsTest1
+from Tests.CorpsTest2 import run_CorpsTest2
 from Tests.CorpsTestParms import CorpsTestParms
 import os
 
@@ -36,21 +36,22 @@ if __name__ == '__main__':
     # Edit to add tests
     Tests = [
         run_CorpsTest0,
-        run_CorpsTest1
-        ]
+        run_CorpsTest1,
+        run_CorpsTest2,
+    ]
 
     # Reminder: NumGlobalServers, NumClients and NumClientsServers attrs of CorpsTestParms are per Env
     TestParms = {
-        0.0: CorpsTestParms(1, 0, 1, 1, 1),
-        0.1: CorpsTestParms(1, 1, 1, 0, 1),
-        1: CorpsTestParms(1, 1, 1, 1, 1),
-        2: CorpsTestParms(2, 2, 2, 2, 10),
-        3: CorpsTestParms(3, 3, 3, 3, 50),
+        0.0: CorpsTestParms(1, 1, 0, 1, 1, 1),
+        0.1: CorpsTestParms(1, 1, 1, 1, 0, 1),
+        1: CorpsTestParms(1, 1, 1, 1, 1, 1),
+        2: CorpsTestParms(1, 2, 2, 2, 2, 10),
+        3: CorpsTestParms(2, 3, 3, 3, 3, 50),
 
-        2.1: CorpsTestParms(2, 1, 1, 1, 1),
-        3.1: CorpsTestParms(3, 1, 1, 1, 1),
-        25.1: CorpsTestParms(25, 1, 1, 1, 1),
-        3.50: CorpsTestParms(3, 1, 1, 1, 50),
+        2.1: CorpsTestParms(1, 2, 1, 1, 1, 1),
+        3.1: CorpsTestParms(1, 3, 1, 1, 1, 1),
+        25.1: CorpsTestParms(1, 25, 1, 1, 1, 1),
+        3.50: CorpsTestParms(1, 3, 1, 1, 1, 50),
         }
 
 
@@ -64,7 +65,7 @@ if __name__ == '__main__':
     os.environ['NumEnvs'] = str(P.NumEnvs)
 
     ConfigFiles = ['Tests/CorpsTestConfig.py']
-    CorpsPythonVersion = 'C o r p s   P y t h o n   0 . 1 . 9'
+    CorpsPythonVersion = 'C o r p s   P y t h o n   0 . 1 . 1'
 
 
     print(f'\n{CorpsPythonVersion}   T e s t i n g   S t a r t e d')
