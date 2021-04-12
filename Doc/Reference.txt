@@ -26,11 +26,13 @@ W o r k e r s
 
     Factory function to create Concs.
 
-    create_Concs(Mgr, ConcClass, *args, LocType=LocType.Auto, LocVal=None, Num=1, **kwargs)
+    create_Concs(ConcClass, *args, Mgr=None, LocType=LocType.Auto, LocVal=None, Num=1, **kwargs)
 
         Returns a list of Names of Concs.
 
-        Mgr is the Manager of the Concs.  Caller should use self.my_Name() at this time.
+        Mgr is the Manager of the Concs.  This an optional argument.
+
+            Caller should use self.my_Name() and a Conc can access as self.my_Mgr().
 
         LocType
 
