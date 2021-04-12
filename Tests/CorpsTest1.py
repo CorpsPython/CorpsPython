@@ -318,8 +318,8 @@ class Corps1(Corps):
         self.Clients = []
 
         for i in range(NumEnvs):
-            self.Servers.extend(create_Concs({self.my_Name()}, Service1))
-            self.Clients.extend(create_Concs({self.my_Name()}, Client1))
+            self.Servers.extend(create_Concs(Service1))
+            self.Clients.extend(create_Concs(Client1))
 
         print(f'\nTestCorps1 initialized')
         self.start()
@@ -374,6 +374,8 @@ def run_CorpsTest1(Version, ConfigFiles, P):
     print('\n\nT e s t   1\n')
 
     TheCorps1 = create_Corps(Corps1, P.NumEnvs, P.NumClientIters, ConfigFiles=ConfigFiles)
+
+    print(f'New Corps {TheCorps1.___target___}')
 
     print(f'\n{Version} \nRunning on Host {my_Host()} ({my_Ip()}) Port {my_Port()}\n')
     print(f'Pickle:  {versions()}')
