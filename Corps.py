@@ -41,6 +41,7 @@ from EnvAddrSpace import MIN_ENVID, MAX_ENVID, CORPSMGR_ENVID
 from ConcIdMgr import ENVMGR_CONCID, CORPSMGR_CONCID, CORPS_CONCID
 from signal import SIGTERM
 from logging import info
+from CorpsStatus import MajorStatus, MinorStatus
 
 
 
@@ -57,6 +58,7 @@ class CorpsMgr(Conc):
 
         self.ConcAddr = ConcAddr(CORPSMGR_ENVID, ConcId, CORPSMGR_ENVID)
         super().__init__()
+        self.MajorStatus = MajorStatus.Booting
 
         # Make sure thread-local data knows the Conc it's assigned to
         TheThread.TheConcAddr = self.ConcAddr
@@ -74,7 +76,7 @@ class CorpsMgr(Conc):
         # ...Everything is on this Host
         CorpsMgrQueue = Queue()
         for i in range(NumEnvs-1):
-            NewEnvId = i + MIN_ENVID + 1
+            NewEnvId = i + MIN_ENVID
             NewEnv = Process(target=Env, args=(NewEnvId, CorpsMgrQueue, ConfigFiles))
             NewEnv.start()
 
@@ -90,7 +92,7 @@ class CorpsMgr(Conc):
 
         # Send EnvRecordSpecs to all Envs except ours
         for i in range(NumEnvs-1):
-            RemoteEnvId = i + MIN_ENVID + 1
+            RemoteEnvId = i + MIN_ENVID
             EnvConcAddr = ConcAddr(CORPSMGR_ENVID, ENVMGR_CONCID, RemoteEnvId)
             RemoteEnv = EnvName(EnvConcAddr)
 
@@ -100,6 +102,9 @@ class CorpsMgr(Conc):
             assert Ret == True,\
                         f'CorpsMgr {self.my_Name()} Process {getpid()} error initing EnvTable in Env {RemoteEnvId}'
 
+
+        # We're up!
+        self.MajorStatus = MajorStatus.Running
         info(f'CorpsMgr {self.my_Name()} initialized, starting...')
 
         # The thread is no longer assigned, so cleanup
@@ -107,15 +112,14 @@ class CorpsMgr(Conc):
 
 
     def kill(self):
-        # Import the Config data here to make sure we get the version loaded by EnvMgr
-        from ConfigGlobals import NumEnvs
-
         pid = getpid()
+        self.MajorStatus = MajorStatus.Exiting
         info(f'CorpsMgr {self.my_Name()} exiting')
 
         # Request exit for all Envs except ours
+        NumEnvs = _EnvTable.num_Envs()  # assumes EnvIds are sequential (not true for ContCorps and ExtCorps)
         for i in range(NumEnvs-1):
-            RemoteEnvId = i + MIN_ENVID + 1
+            RemoteEnvId = i + MIN_ENVID
             EnvConcAddr = ConcAddr(CORPSMGR_ENVID, ENVMGR_CONCID, RemoteEnvId)
             RemoteEnv = EnvName(EnvConcAddr)
             RemoteEnv.__kill__()
@@ -125,6 +129,7 @@ class CorpsMgr(Conc):
         kill(pid, 0)
         kill(pid, SIGTERM)
 
+        self.MajorStatus = MajorStatus.Nonexistent
         info(f'CorpsMgr {self.my_Name()} still here')
 
 
