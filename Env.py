@@ -11,7 +11,7 @@
 from Conc import Conc
 from ConcAddr import ConcAddr
 from EnvGlobals import TheThread, NullConcAddr, set_EnvId, my_EnvId, set_EnvMgrAddr, _ConcIdMgr, _Addr2Conc
-from EnvGlobals import _EnvTable, DefaultEnvRecord, set_MyPort
+from EnvGlobals import _EnvTable, DefaultEnvRecord, set_MyPort, set_EnvStatus
 from os import getpid, kill
 from importlib import import_module
 from EnvAddrSpace import CORPSMGR_ENVID
@@ -22,6 +22,8 @@ from copy import copy
 from signal import SIGTERM
 from Config import load_config
 from logging import basicConfig, info
+from CorpsStatus import MajorStatus, MinorStatus
+
 
 
 class Env(Conc):
@@ -37,6 +39,7 @@ class Env(Conc):
 
         self.ConcAddr = ConcAddr(CORPSMGR_ENVID, ConcId, EnvId)
         self.EnvId = EnvId
+        set_EnvStatus(MajorStatus.Booting)
 
         super().__init__()
 
@@ -70,13 +73,17 @@ class Env(Conc):
         # The thread is no longer assigned, so cleanup
         TheThread.TheConcAddr = NullConcAddr
 
+        set_EnvStatus(MajorStatus.Running)
         info(f'EnvMgr {self.my_Name()} Env {EnvId} initialized')
 
 
     def __kill__(self):
-        Pid = getpid()
         info(f'EnvMgr {self.my_Name()} Env {self.EnvId} exiting')
+        set_EnvStatus(MajorStatus.Exiting)
+
+        Pid = getpid()
         kill(Pid, SIGTERM)
+        set_EnvStatus(MajorStatus.Nonexistent)
 
 
     def init_EnvTable(self, AllEnvMsgList):

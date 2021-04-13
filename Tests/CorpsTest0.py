@@ -81,8 +81,7 @@ class Client0(Conc):
 
 
         if self.NumClientsServers > 0:
-            self.ClientsServers = create_Concs(self.my_Name(), Service0, LocType=LocType.PerEnv, \
-                                                                                        Num=self.NumClientsServers)
+            self.ClientsServers = create_Concs(Service0, LocType=LocType.PerEnv, Num=self.NumClientsServers)
 
         print(f'Client {self.my_Name()} ready for testing')
 
@@ -184,11 +183,11 @@ class Corps0(Corps):
 
         if self.NumServers > 0:
             for i in range(self.NumEnvs):
-                NewServers = create_Concs(self.my_Name(), Service0, LocType=LocType.Auto, Num=self.NumServers)
+                NewServers = create_Concs(Service0, LocType=LocType.Auto, Num=self.NumServers)
                 self.Servers.extend(NewServers)
 
         for env in range(self.NumEnvs):
-            NewClients = create_Concs(self.my_Name(), Client0, self.Servers, self.NumEnvs, \
+            NewClients = create_Concs(Client0, self.Servers, self.NumEnvs, \
                 self.NumClientsServers, self.NumClientIters, LocType=LocType.EnvId, LocVal=env, Num=self.NumClients)
             self.Clients.extend(NewClients)
 
@@ -238,6 +237,8 @@ def run_CorpsTest0(Version, ConfigFiles, P):
 
     TheCorps0 = create_Corps(Corps0, P.NumEnvs, P.NumGlobalServers, P.NumClients, P.NumClientsServers, \
                                                                             P.NumClientIters, ConfigFiles=ConfigFiles)
+
+    print(f'New Corps {TheCorps0.___target___}')
 
     print(f'\n{Version} \nRunning on Host {my_Host()} ({my_Ip()}) Port {my_Port()}\n')
     print(f'Pickle:  {versions()}')

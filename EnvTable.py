@@ -2,11 +2,12 @@
     EnvTable is a dict mapping EnvIds to EnvRecords.
 
 
+    The EnvTableBase class is subclassed into EnvTable for regular Envs and CorpsEnvTable to support ContCorps and
+    ExtCorps.
+
     The CorpsMgr manages the allocation of EnvIds for the Corps.
 
     All operations are protected by a lock.
-
-    One instance per Env is instantiated in EnvGlobals.py.
 
     Needed to support Workers' LocType=Auto gen of a next Env to create a Worker in.  Placed it here since it
     required the highest EnvId already alloc'd as N in modulo-N.
@@ -17,45 +18,90 @@
 
 from threading import Lock
 from copy import copy
-from EnvAddrSpace import MIN_ENVID, MAX_CONT_CORPS_ENVID
 
 
 
-class EnvTable():
-    def __init__(self):
+class EnvTableBase():
+    ''' Base class for all EnvTables '''
+
+    def __init__(self, MinEnvId, MaxEnvId):
+        self.MinEnvId = MinEnvId
+        self.MaxEnvId = MaxEnvId
+        self.NextEnvId = self.MinEnvId
         self.Dict = dict()
         self.Lock = Lock()
-        self.HighestEnvId = 0           # Highest alloc'd EnvId in this Corps (i.e. not those Cont or Ext Corps)
-        self.NextEnvId = MIN_ENVID
 
 
     def register(self, EnvId, anEnvRecord):
-        ''' Register the EnvRecord of a given EnvId '''
+        ''' Register the EnvRecord of a given EnvId
+
+            If EnvId is None the EnvTable assigns it
+
+            Returns the EnvId
+        '''
+
+        if EnvId != None:
+            assert EnvId >= self.MinEnvId, f'EnvTableBase register(): EnvId {EnvId} is too low'
+            assert EnvId <= self.MaxEnvId, f'EnvTableBase register(): EnvId {EnvId} is too high'
+
+        AlreadyExists = False
 
         self.Lock.acquire()
 
-        self.Dict[EnvId] = anEnvRecord
+        if EnvId == None:
+            # Find next unallocated EnvId
+            while self.NextEnvId <= self.MaxEnvId:
+                try:
+                    ExistingEnvRecord = self.Dict[self.NextEnvId]
 
-        if EnvId > self.HighestEnvId:
-            self.HighestEnvId = EnvId
+                except:
+                    break
+
+                else:
+                    self.NextEnvId += 1
+
+            if self.NextEnvId <= self.MaxEnvId:
+                self.Dict[self.NextEnvId] = anEnvRecord
+
+            # else:
+                # implicit flag of EnvId too high via assert before exit
+
+            NewEnvId = self.NextEnvId
+
+        else:
+            # Make sure given EnvId is not already allocated
+            try:
+                ExistingEnvRecord = self.Dict[EnvId]
+
+            except:
+                self.Dict[EnvId] = anEnvRecord
+
+            else:
+                AlreadyExists = True  # Flag EnvId already exists via assert before exit
+
+            NewEnvId = EnvId
+
+
+        self.NextEnvId += 1  # prep for next call
 
         self.Lock.release()
 
+        assert NewEnvId <= self.MaxEnvId, f'EnvTableBase register(): EnvId {NewEnvId} is too high'
+        assert AlreadyExists == False, f'EnvTableBase register(): EnvId {NewEnvId} already exists'
 
-    def next_EnvId(self):
-        ''' Support for Workers' LocType=Auto '''
+        return NewEnvId
+
+
+    def num_Envs(self):
+        ''' Returns number of Envs '''
 
         self.Lock.acquire()
 
-        EnvId = self.NextEnvId
-
-        self.NextEnvId += 1
-        if self.NextEnvId > self.HighestEnvId:
-            self.NextEnvId = MIN_ENVID
+        NumEnvs = len(self.Dict)
 
         self.Lock.release()
 
-        return EnvId
+        return NumEnvs
 
 
     def update(self, EnvId, NewEnvRecord):
@@ -65,7 +111,7 @@ class EnvTable():
 
         anEnvRecord = None
         try:
-            anEnvRecord = self.Dict.get(EnvId)
+            anEnvRecord = self.Dict[EnvId]
 
         except:
             pass
@@ -85,7 +131,7 @@ class EnvTable():
 
         anEnvRecord = None
         try:
-            anEnvRecord = self.Dict.get(EnvId)
+            anEnvRecord = self.Dict[EnvId]
 
         except:
             pass
@@ -99,14 +145,11 @@ class EnvTable():
     def unregister(self, EnvId):
         ''' Find and delete the EnvRecord of a given EnvId '''
 
-        if EnvId > MAX_CONT_CORPS_ENVID:
-            raise IndexError(f'Cannot unregister EnvRecord with EnvId {EnvId}')
-
         self.Lock.acquire()
 
         anEnvRecord = None
         try:
-            anEnvRecord = self.Dict.get(EnvId)
+            anEnvRecord = self.Dict[EnvId]
 
         except:
             pass
@@ -130,3 +173,120 @@ class EnvTable():
         self.Lock.release()
 
         return ' '.join(output)
+
+
+def next_Env(EnvDict, MinEnvId, MaxEnvId):
+
+    '''
+    Generator that returns the next Env and EnvRecord as a tuple from the Dict of an EnvTable
+
+    Only returns EnvRecords for EnvIds between EnvIdMin and EnvIdMax, inclusive
+
+    Danger! Danger!, Will Robinson!!
+
+    Only to be used when the EnvTable the Dict is in is guaranteed to be stable, unchanging!
+
+    That probably limits it to use in CorpsMgr methods since CorpsMgr is the only entity that can change or
+    request EnvMgrs to change an EnvTable.
+
+    Usage:
+    NE: = next_Env(anEnvTable.Dict, MinEnvId, MaxEnvId)
+
+    for EnvId_EnvRecord in NE:
+        EnvId = EnvId_EnvRecord[0]
+        anEnvRecord = EnvId_EnvRecord[1]
+    '''
+
+    for EnvId, anEnvRecord in EnvDict.items():
+        if EnvId >= MinEnvId and EnvId <= MaxEnvId:
+            yield(EnvId, anEnvRecord)
+
+
+class EnvTable(EnvTableBase):
+    def __init__(self, MinEnvId, MaxEnvId):
+        super().__init__(MinEnvId, MaxEnvId)
+
+        self.NextAutoEnvId = self.MinEnvId
+
+
+    def next_AutoEnvId(self):
+        ''' Support for Workers' create_Conc's LocType=Auto '''
+
+        self.Lock.acquire()
+
+        AutoEnvId = self.NextAutoEnvId
+
+        self.NextAutoEnvId += 1
+        if self.NextAutoEnvId > len(self.Dict)-1:
+            self.NextAutoEnvId = self.MinEnvId
+
+        self.Lock.release()
+
+        return AutoEnvId
+
+
+class CorpsEnvTable(EnvTableBase):
+    def __init__(self, MinEnvId, MaxEnvId):
+        super().__init__(MinEnvId, MaxEnvId)
+        self.Tag2Id = dict()
+        self.Id2Tag = dict()
+
+
+    def register(self, EnvId, aCorpsEnvRecord):
+        ''' Register the EnvRecord of a given Tag and EnvId
+
+            If EnvId is None the EnvTable assigns it
+
+            Returns the EnvId
+        '''
+
+        assert aCorpsEnvRecord.Tag != '', f'CorpsEnvTable register: Tag must be non-empty'
+
+        self.Lock.acquire()
+
+        anEnvId = None
+        try:
+            anEnvId = self.Tag2Id[aCorpsEnvRecord.Tag]
+
+        except:
+            anEnvId = super().register(EnvId, aCorpsEnvRecord)
+            self.Tag2Id[aCorpsEnvRecord.Tag] = anEnvId
+            self.Id2Tag[anEnvId] = aCorpsEnvRecord.Tag
+
+        self.Lock.release()
+
+        return anEnvId
+
+
+    def unregister(self, Tag='', EnvId=None):
+        ''' Find and delete the EnvRecord of a given Tag or EnvId '''
+
+        assert Tag != '' or EnvId != None, f'CorpsEnvTable unregister: Tag {Tag} or EnvId {EnvId}must be valid'
+
+        self.Lock.acquire()
+
+        anEnvId = EnvId
+        aTag = Tag
+
+        if aTag != '':
+            try:
+                anEnvId = self.Tag2Id[aTag]
+
+            except:
+                pass
+
+        elif anEnvId != None:
+            try:
+                aTag = self.Id2Tag[anEnvId]
+
+            except:
+                pass
+
+        if aTag != '' and anEnvId != None:
+            del self.Tag2Id[aTag]
+            del self.Id2Tag[anEnvId]
+            super().unregister(anEnvId)
+
+        self.Lock.release()
+
+        assert aTag != '' and anEnvId != None, f'CorpsEnvTable unregister: Tag {aTag} or EnvId {anEnvId} not found'

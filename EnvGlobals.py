@@ -21,7 +21,20 @@ from EnvRecord import EnvRecord
 from EnvTable import EnvTable
 from socket import getfqdn, getaddrinfo, AF_INET
 from ipaddress import ip_address
+from EnvAddrSpace import *
+from CorpsStatus import MajorStatus, MinorStatus
 
+
+
+EnvStatus = MajorStatus.Nonexistent
+
+def set_EnvStatus(Status):
+    global EnvStatus
+    EnvStatus = Status
+
+def my_EnvStatus():
+    global EnvStatus
+    return EnvStatus
 
 
 MyHost = None
@@ -92,7 +105,11 @@ _Addr2Conc = Addr2Conc()
 
 _ThreadPool = ThreadPool()
 
-_EnvTable = EnvTable()
+_EnvTable = EnvTable(CORPSMGR_ENVID, MAX_ENVID)
+
+_ContCorpsEnvTable = EnvTable(MIN_CONT_CORPS_ENVID, MAX_CONT_CORPS_ENVID)
+
+_ExtCorpsEnvTable = EnvTable(MIN_EXT_CORPS_ENVID, MAX_EXT_CORPS_ENVID)
 
 TheTcpFactory = TcpFactory(_ThreadPool, _Addr2Conc)
 

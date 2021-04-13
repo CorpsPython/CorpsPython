@@ -20,11 +20,13 @@
 
     Factory function to create Concs.
 
-    create_Concs(Mgr, ConcClass, *args, LocType=LocType.Auto, LocVal=None, Num=1, **kwargs)
+    create_Concs(ConcClass, *args, Mgr=None, LocType=LocType.Auto, LocVal=None, Num=1, **kwargs)
 
         Returns a list of Names of Concs.
 
-        Mgr is the Manager of the Concs.  Caller should use self.my_Name() at this time.
+        Mgr is the Manager of the Concs.  This an optional argument.
+
+            Caller should use self.my_Name() and a Conc can access using self.my_Mgr().
 
         LocType
 
@@ -58,7 +60,8 @@
     
         - create_Corps()
 
-            - Ext=False for Cont Corps, True for Ext Corps
+            - Ext=True
+                - False for Cont Corps, True for Ext Corps
 
             - Tag=TagName
                 - default 'None'
@@ -77,7 +80,7 @@
                     - type of Auto Loc (that restricts it)
                     
                 LocType.Region LocVal=RegionName
-                     - Name denotes a Conc or Corps?
+                    - Name denotes a Conc or Corps?
                     - type of Auto Loc (that restricts it)
 
 
@@ -86,11 +89,10 @@
 
 
         - linkto()
-            - link an existing Ext Corps 
+            - link (i.e. become Mgr of) an existing Ext Corps 
             - Not implemented yet
             - HostPort=(name/ip, port) or Dir=DirName
-            - Support for ContCorps?
-
+            
 
         - nameof()
             - Not implemented yet
@@ -131,7 +133,7 @@ from inspect import stack, getmodule
 from ConcAddr import ConcAddr, ExtAddr
 from Name import proxy, Name
 from Env import EnvName    # EnvName dynamically genned by proxy()
-from EnvGlobals import _ConcIdMgr, my_EnvId, _Addr2Conc, _EnvTable, my_Port, my_Ip
+from EnvGlobals import _ConcIdMgr, my_EnvId, _Addr2Conc, _EnvTable, my_Port, my_Ip, my_EnvStatus
 from EnvAddrSpace import CORPSMGR_ENVID
 from ConcIdMgr import ENVMGR_CONCID, CORPS_CONCID
 from enum import IntEnum
@@ -142,34 +144,57 @@ from Exceptions import AsyncExecutionError
 from traceback import format_exception
 from importlib import import_module
 from multiprocessing import Process, Queue
+from CorpsStatus import MajorStatus
 
 
 
-def create_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs):
-    ''' create an ExtCorps from a script or an ExtCorps or ContCorps from another Corps '''
+class LocType(IntEnum):
+    # Conc or Func
+    EnvId = 0
+    PerEnv = 1
 
-    assert issubclass(CorpsClass, Corps) == True, f'{CorpsClass.__name__} is not a Corps'
+    # Conc, Func, or Corps
+    Auto = 2
+
+    # Corps
+    Host = 3
+    Cluster = 4
+    Region = 5
+
+
+def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, ConfigFiles=[], \
+                                                                        LocType=LocType.Auto, LocVal=None, **kwargs):
+    ''' create an ExtCorps from a script or an ExtCorps or ContCorps from calling Corps '''
+
+    assert issubclass(CorpsClass, Corps) == True, f'{CorpsClass.__name__} is not a type of Corps'
 
     frm = stack()[1]
     CallingModule = getmodule(frm[0])
 
-    # Read and remove kwargs meant for this function (i.e. not to be passed on to new Corps)
-    #   LocType, LocVal, ?
-
-    WorkerQueue = Queue()
-
-    # Store kwargs for new Corps (and will be processed by ConcMeta)
-    #   Tag, Ext/Cont, ?
+    # Store kwargs for new Corps (will be processed by ConcMeta)
+    #   Mgr, Tag, Ext/Cont,
     kwargs['ConfigFiles'] = ConfigFiles
 
-    # Create on this Host
-    NewCorpsProcess = Process(target=rem2loc_create_Corps, \
-                              args=(CallingModule.__name__, CorpsClass.__name__, WorkerQueue, *args), kwargs=kwargs)
-    NewCorpsProcess.start()
+    # Create ExtCorps on this Host from a Script caller (Ext must be True)
+    # Mgr stays None for ExtCorps w/ no Mgr
+    EnvStatus = my_EnvStatus()
+    if EnvStatus == MajorStatus.Running:
+        print(f'create_Corps "{Tag}"  E n v S t a t u s: {MajorStatus.Running.name} == {EnvStatus.name}?')
+        return
 
-    NewCorpsData = WorkerQueue.get()
-    NewCorpsIp = NewCorpsData[0]
-    NewCorpsPort = NewCorpsData[1]
+    elif EnvStatus == MajorStatus.Nonexistent:
+        print(f'create_Corps "{Tag}"  E n v S t a t u s: {MajorStatus.Nonexistent.name} == {EnvStatus.name}?')
+
+        WorkerQueue = Queue()
+
+        NewCorpsProcess = Process(target=other_process_create_Corps, \
+                              args=(CallingModule.__name__, CorpsClass.__name__, WorkerQueue, *args), kwargs=kwargs)
+        NewCorpsProcess.start()
+
+        NewCorpsData = WorkerQueue.get()
+        NewCorpsIp = NewCorpsData[0]
+        NewCorpsPort = NewCorpsData[1]
+
 
     NewConcAddr = ExtAddr(CORPSMGR_ENVID, CORPS_CONCID, CORPSMGR_ENVID, NewCorpsIp, NewCorpsPort)
 
@@ -180,14 +205,14 @@ def create_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs):
     return NewName
 
 
-def rem2loc_create_Corps(CallingModule, CorpsClass, WorkerQueue, *args, **kwargs):
+def other_process_create_Corps(CallingModule, CorpsClass, WorkerQueue, *args, **kwargs):
     '''
         Create a Corps in a new process
 
         CallingModule and ConcClass are text names
     '''
 
-    # Find the Class object
+    # Find the CorpsClass object
     TheCallingModule = import_module(CallingModule)
     ConcClassInModule = getattr(TheCallingModule, CorpsClass)
 
@@ -249,24 +274,18 @@ def __create_remote_Conc(Mgr, RemoteEnvId, CallingModule, ConcClass, *args, **kw
     return NewName
 
 
-class LocType(IntEnum):
-    EnvId = 0
-    Auto = 1
-    PerEnv = 2
+def create_Concs(ConcClass, *args, Mgr=None, LocType=LocType.Auto, LocVal=None, Num=1, **kwargs):
+    ''' Create Concs '''
 
+    assert issubclass(ConcClass, Conc) == True, f'{ConcClass.__name__} is not a valid Conc class'
 
-def __create_Concs__(Mgr, LocType, LocVal, Num, CallingModule, ConcClass, *args, **kwargs):
-    ''' Internal create Concs '''
-
-    from ConfigGlobals import NumEnvs
-
-    assert issubclass(ConcClass, Conc) == True, f'{ConcClass.__name__} is not a valid Worker class'
-    assert issubclass(ConcClass, Corps) == False, f'{ConcClass.__name__} is not a valid Worker class yet'
+    frm = stack()[1]
+    CallingModule = getmodule(frm[0])
 
     if Num < 1:
         return None
 
-    if LocVal != None and LocVal > NumEnvs:
+    if LocVal != None and LocVal > _EnvTable.num_Envs():
         raise IndexError(f'EnvId {LocVal} does not exist')
 
     TheWorkers = []
@@ -285,7 +304,7 @@ def __create_Concs__(Mgr, LocType, LocVal, Num, CallingModule, ConcClass, *args,
             raise ValueError(f'LocType Auto must have LocVal None')
 
         for w in range(Num):
-            AutoLoc = _EnvTable.next_EnvId()
+            AutoLoc = _EnvTable.next_AutoEnvId()
 
             if AutoLoc == my_EnvId():
                 TheWorkers.append(__create_local_Conc(Mgr, CallingModule, ConcClass, *args, **kwargs))
@@ -299,6 +318,7 @@ def __create_Concs__(Mgr, LocType, LocVal, Num, CallingModule, ConcClass, *args,
             raise ValueError(f'LocType PerEnv must have LocVal None')
 
         for w in range(Num):
+            NumEnvs = _EnvTable.num_Envs()
             for Loc in range(NumEnvs):
                 if Loc == my_EnvId():
                     TheWorkers.append(__create_local_Conc(Mgr, CallingModule, ConcClass, *args, **kwargs))
@@ -311,24 +331,5 @@ def __create_Concs__(Mgr, LocType, LocVal, Num, CallingModule, ConcClass, *args,
 
 
     return TheWorkers
-
-
-
-def create_Concs(Mgr, ConcClass, *args, LocType=LocType.Auto, LocVal=None, Num=1, **kwargs):
-    '''
-        External interface for creating Concs
-
-        Identifies the calling module the Conc class defined in or imported to and calls
-        the internal create Concs function
-    '''
-    '''    
-        better formulation of CallingModule?:
-            caller = inspect.currentframe().f_back
-            print(f"f in {__name__}: called from module", caller.f_globals['__name__'])
-    '''
-    frm = stack()[1]
-    CallingModule = getmodule(frm[0])
-
-    return __create_Concs__(Mgr, LocType, LocVal, Num, CallingModule, ConcClass, *args, **kwargs)
 
 
