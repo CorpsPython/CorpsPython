@@ -111,7 +111,7 @@ class CorpsMgr(Conc):
         TheThread.TheConcAddr = NullConcAddr
 
 
-    def kill(self):
+    def __kill__(self):
         pid = getpid()
         self.MajorStatus = MajorStatus.Exiting
         info(f'CorpsMgr {self.my_Name()} exiting')
@@ -125,7 +125,6 @@ class CorpsMgr(Conc):
             RemoteEnv.__kill__()
 
         # Now us
-        #self.__kill__(pid)
         kill(pid, 0)
         kill(pid, SIGTERM)
 
@@ -161,11 +160,11 @@ class Corps(Conc):
         TheThread.TheConcAddr = NullConcAddr
 
 
-    def kill(self):
+    def __kill__(self):
         # Send kill request to CorpsMgr
         CorpsMgrConcAddr = ConcAddr(CORPSMGR_ENVID, CORPSMGR_CONCID, CORPSMGR_ENVID)
         CorpsMgrConc = CorpsMgrName(CorpsMgrConcAddr)
-        CorpsMgrConc.kill()
+        CorpsMgrConc.__kill__()
 
 
     def cleanup(self):
@@ -174,7 +173,7 @@ class Corps(Conc):
 
     def exit(self):
         self.cleanup()
-        self.kill()
+        self.__kill__()
 
 
 
