@@ -392,5 +392,5 @@ def run_CorpsTest1(Version, ConfigFiles, P):
 
 
     print('\nTestCorps1 exiting')
-    TheCorps1.kill()
+    TheCorps1.exit()
 
