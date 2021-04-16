@@ -20,16 +20,27 @@ class ConcMeta(type):
         # create the instance of the Conc subclass
         obj = cls.__new__(cls, *args, **kwargs)
 
-        # remove kwargs intended for Conc and Corps and store them (to hide from end-developers)
+        # store kwargs intended for Conc and delete them (to hide from end-developers in __init__())
         ConcAddr = 'ConcAddr'
         if ConcAddr in kwargs:
             obj.ConcAddr = kwargs[ConcAddr]
             del kwargs[ConcAddr]
 
+        # store kwargs intended for Corps and delete them (to hide from end-developers in __init__())
         ConfigFiles = 'ConfigFiles'
         if ConfigFiles in kwargs:
             obj.ConfigFiles = kwargs[ConfigFiles]
             del kwargs[ConfigFiles]
+
+        Ext = 'Ext'
+        if Ext in kwargs:
+            obj.Ext = kwargs[Ext]
+            del kwargs[Ext]
+
+        Tag = 'Tag'
+        if Tag in kwargs:
+            obj.Tag = kwargs[Tag]
+            del kwargs[Tag]
 
         # initialize the instance
         obj.__init__(*args, **kwargs)

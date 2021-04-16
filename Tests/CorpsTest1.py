@@ -125,7 +125,7 @@ class Service1(TgtBase3, Conc):
     def __init__(self):
         super().__init__()
 
-        print(f'Service {self.my_Name()} ready for testing')
+        print(f'Service {self} ready for testing')
 
         self.start()
 
@@ -136,7 +136,7 @@ class Client1(Conc):
     def __init__(self):
         super().__init__()
 
-        print(f'Client {self.my_Name()} ready for testing')
+        print(f'Client {self} ready for testing')
 
         self.start()
 
@@ -149,7 +149,7 @@ class Client1(Conc):
             requests have been issued.
         '''
 
-        print(f'Client {self.my_Name()} starting testing against Service {Server}')
+        print(f'Client {self} testing Service {Server}')
 
         # test exception returns by forcing a divide by zero
         R = Server.d1(0)
@@ -161,7 +161,7 @@ class Client1(Conc):
             pass
 
         else:
-            print(f'C l i e n t {self.my_Name()}   d i d   n o t   s e e   E x c e p t i o n !\n')
+            print(f'C l i e n t {self}   d i d   n o t   s e e   E x c e p t i o n !\n')
 
 
         # regular testing...
@@ -277,15 +277,15 @@ class Client1(Conc):
 
             except:
                 Errors += 1
-                print(f'\nC l i e n t {self.my_Name()}   E x c e p t i o n : exec_info: {exc_info()} in Test "{Test[i]}" Iter {Iter[i]}\n')
+                print(f'\nC l i e n t {self}   E x c e p t i o n : exec_info: {exc_info()} in Test "{Test[i]}" Iter {Iter[i]}\n')
 
             else:
                 if Ret == NoRet or Ret != ExpRets[i]:
                     Errors += 1
-                    print(f'\nC l i e n t {self.my_Name()}   E r r o r  {Ret} vs {ExpRets[i]} in Test "{Test[i]}" Iter {Iter[i]}\n')
+                    print(f'\nC l i e n t {self}   E r r o r  {Ret} vs {ExpRets[i]} in Test "{Test[i]}" Iter {Iter[i]}\n')
 
 
-        print(f'Client {self.my_Name()} finished {i+1} Requests with {Errors} Errors')
+        print(f'Client {self} finished {i+1} Requests with {Errors} Errors')
 
         return True
 
@@ -321,14 +321,14 @@ class Corps1(Corps):
             self.Servers.extend(create_Concs(Service1))
             self.Clients.extend(create_Concs(Client1))
 
-        print(f'\nTestCorps1 initialized')
+        print(f'\n{self} initialized')
         self.start()
 
 
     def run_all_tests(self):
         ''' Run all of the tests concurrently '''
 
-        print(f'TestCorps1 testing\n')
+        print(f'{self} testing\n')
 
         FutRets = []
         for i in range(len(self.Clients)):
@@ -361,7 +361,7 @@ class Corps1(Corps):
             NotReady = StillNotReady
 
 
-        print('\nTestCorps1 done testing')
+        print(f'\n{self} done testing')
         return True
 
 
@@ -373,9 +373,9 @@ def run_CorpsTest1(Version, ConfigFiles, P):
 
     print('\n\nT e s t   1\n')
 
-    TheCorps1 = create_Corps(Corps1, P.NumEnvs, P.NumClientIters, ConfigFiles=ConfigFiles)
+    TheCorps1 = create_Corps(Corps1, P.NumEnvs, P.NumClientIters, Tag='Corps1', ConfigFiles=ConfigFiles)
 
-    print(f'New Corps {TheCorps1.___target___}')
+    print(f'New Corps {TheCorps1.my_Tag().Ret} {TheCorps1}')
 
     print(f'\n{Version} \nRunning on Host {my_Host()} ({my_Ip()}) Port {my_Port()}\n')
     print(f'Pickle:  {versions()}')
@@ -392,5 +392,5 @@ def run_CorpsTest1(Version, ConfigFiles, P):
 
 
     print('\nTestCorps1 exiting')
-    TheCorps1.kill()
+    TheCorps1.exit()
 

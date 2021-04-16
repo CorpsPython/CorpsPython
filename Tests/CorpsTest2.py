@@ -25,16 +25,16 @@ from traceback import format_exception
 
 class WorkerCorps(Corps):
     def __init__(self, GlobalWorkerCorps):
-        print(f'{self.my_Tag()} initing')
+        print(f'{self} initing')
         super().__init__()
         self.GlobalWorker = GlobalWorkerCorps
 
-        #print(f'{self.my_Tag()} starting')
+        #print(f'{self} starting')
         self.start()
 
 
     def run_tests(self):
-        print(f'{self.my_Tag()} testing')
+        print(f'{self} testing')
 
         if self.GlobalWorker != None:
             self.GlobalWorker.run_tests()
@@ -44,7 +44,7 @@ class WorkerCorps(Corps):
 
 class MgrCorps(Corps):
     def __init__(self, MaxLevel, Level, NumWorkers, GlobalWorker):
-        print(f'{self.my_Tag()} initing')
+        print(f'{self} initing')
         super().__init__()
 
         self.ExtWorkers = []
@@ -76,14 +76,14 @@ class MgrCorps(Corps):
             self.WorkerTags.append(Tag)
             self.ContWorkers.append(create_Corps(WorkerCorps, Ext=False, Tag=Tag))
 
-        print(f'{self.my_Tag()} starting')
+        print(f'{self} starting')
         self.start()
 
 
     def run_tests(self):
         ''' Run all of the tests concurrently '''
 
-        #print(f'{self.my_Tag()} testing')
+        #print(f'{self} testing')
 
         Rets = []
 
@@ -130,7 +130,7 @@ def run_CorpsTest2(Version, ConfigFiles, P):
 
     # TheMgrCorps = create_Corps(MgrCorps, P.CorpsDepth, 0, P.NumClientsServers, None, Ext=True, Tag='MgrCorps.0')
     #
-    # print(f'New Corps {TheMgrCorps.___target___}')
+    # print(f'New Corps {TheMgrCorps.my_Tag().Ret} {TheMgrCorps}')
     #
     # print(f'\n{Version} \nRunning on Host {my_Host()} ({my_Ip()}) Port {my_Port()}\n')
     # print(f'Pickle:  {versions()}')

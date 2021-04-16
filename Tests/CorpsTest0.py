@@ -54,7 +54,7 @@ class Service0(base0, Conc):
     def __init__(self):
         super().__init__()
 
-        print(f'Service {self.my_Name()} ready for testing')
+        print(f'Service {self} ready for testing')
 
         self.start()
 
@@ -83,7 +83,7 @@ class Client0(Conc):
         if self.NumClientsServers > 0:
             self.ClientsServers = create_Concs(Service0, LocType=LocType.PerEnv, Num=self.NumClientsServers)
 
-        print(f'Client {self.my_Name()} ready for testing')
+        print(f'Client {self} ready for testing')
 
         self.start()
 
@@ -91,14 +91,14 @@ class Client0(Conc):
     def run_all_tests(self):
         ''' Run all of the tests, first against the global services, then against the private ones '''
 
-        print(f'Client {self.my_Name()} starting testing')
+        print(f'Client {self} starting testing')
 
         Requests, Errors = self.run_one_test(self.Servers, self.Iters)
-        print(f'Client {self.my_Name()} finished {Requests} Requests with {Errors} Errors to ' + \
+        print(f'Client {self} finished {Requests} Requests with {Errors} Errors to ' + \
                                                                             f'{len(self.Servers)} Global Servers')
 
         Requests, Errors = self.run_one_test(self.ClientsServers, self.Iters)
-        print(f'Client {self.my_Name()} finished {Requests} Requests with {Errors} Errors to ' + \
+        print(f'Client {self} finished {Requests} Requests with {Errors} Errors to ' + \
                                                                         f'its own {len(self.ClientsServers)} Servers')
 
         return True
@@ -138,7 +138,7 @@ class Client0(Conc):
 
             except:
                 Errors += 1
-                print(f'\nC l i e n t {self.my_Name()} E x c e p t i o n : exec_info: {exc_info()}\n')
+                print(f'\nC l i e n t {self} E x c e p t i o n : exec_info: {exc_info()}\n')
 
             if Ret == NoRet:
                 Errors += 1
@@ -152,7 +152,7 @@ class Client0(Conc):
 
 
     def cleanup(self):
-        print(f'Client {self.my_Name()} cleaning up')
+        print(f'Client {self} cleaning up')
 
 
 class Corps0(Corps):
@@ -191,14 +191,14 @@ class Corps0(Corps):
                 self.NumClientsServers, self.NumClientIters, LocType=LocType.EnvId, LocVal=env, Num=self.NumClients)
             self.Clients.extend(NewClients)
 
-        print(f'\nTestCorps0 initialized')
+        print(f'\n{self} initialized')
         self.start()
 
 
     def run_all_tests(self):
         ''' Run all of the tests concurrently '''
 
-        print(f'TestCorps0 testing\n')
+        print(f'{self} testing\n')
 
         FutRets = []
         i = 0
@@ -218,7 +218,7 @@ class Corps0(Corps):
                       f'   E x c e p t i o n: exec_info: {exc_info()}\n')
 
 
-        print('\nTestCorps0 done testing')
+        print(f'\n{self} done testing')
         return True
 
 
@@ -236,9 +236,9 @@ def run_CorpsTest0(Version, ConfigFiles, P):
     print('\n\nT e s t   0\n')
 
     TheCorps0 = create_Corps(Corps0, P.NumEnvs, P.NumGlobalServers, P.NumClients, P.NumClientsServers, \
-                                                                            P.NumClientIters, ConfigFiles=ConfigFiles)
+                                                            P.NumClientIters, Tag='Corps0', ConfigFiles=ConfigFiles)
 
-    print(f'New Corps {TheCorps0.___target___}')
+    print(f'New Corps {TheCorps0.my_Tag().Ret} {TheCorps0}')
 
     print(f'\n{Version} \nRunning on Host {my_Host()} ({my_Ip()}) Port {my_Port()}\n')
     print(f'Pickle:  {versions()}')

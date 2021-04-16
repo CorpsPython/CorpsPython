@@ -161,7 +161,11 @@ class LocType(IntEnum):
     Cluster = 4
     Region = 5
 
+##############################
 
+#  Managed vs unmanaged in Api  ?????
+
+###############################
 def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, ConfigFiles=[], \
                                                                         LocType=LocType.Auto, LocVal=None, **kwargs):
     ''' create an ExtCorps from a script or an ExtCorps or ContCorps from calling Corps '''
@@ -172,7 +176,8 @@ def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, ConfigFil
     CallingModule = getmodule(frm[0])
 
     # Store kwargs for new Corps (will be processed by ConcMeta)
-    #   Mgr, Tag, Ext/Cont,
+    kwargs['Tag'] = Tag
+    kwargs['Ext'] = Ext
     kwargs['ConfigFiles'] = ConfigFiles
 
     # Create ExtCorps on this Host from a Script caller (Ext must be True)
@@ -187,7 +192,7 @@ def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, ConfigFil
 
         WorkerQueue = Queue()
 
-        NewCorpsProcess = Process(target=other_process_create_Corps, \
+        NewCorpsProcess = Process(target=__other_process_create_Corps__, \
                               args=(CallingModule.__name__, CorpsClass.__name__, WorkerQueue, *args), kwargs=kwargs)
         NewCorpsProcess.start()
 
@@ -205,7 +210,7 @@ def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, ConfigFil
     return NewName
 
 
-def other_process_create_Corps(CallingModule, CorpsClass, WorkerQueue, *args, **kwargs):
+def __other_process_create_Corps__(CallingModule, CorpsClass, WorkerQueue, *args, **kwargs):
     '''
         Create a Corps in a new process
 
@@ -224,7 +229,7 @@ def other_process_create_Corps(CallingModule, CorpsClass, WorkerQueue, *args, **
     return True
 
 
-def __create_local_Conc(Mgr, CallingModule, ConcClass, *args, **kwargs):
+def __create_local_Conc__(Mgr, CallingModule, ConcClass, *args, **kwargs):
     ''' low-level support for Conc creation in this Env '''
 
     ConcId = _ConcIdMgr.new()
@@ -244,7 +249,7 @@ def __create_local_Conc(Mgr, CallingModule, ConcClass, *args, **kwargs):
     return NewName
 
 
-def __create_remote_Conc(Mgr, RemoteEnvId, CallingModule, ConcClass, *args, **kwargs):
+def __create_remote_Conc__(Mgr, RemoteEnvId, CallingModule, ConcClass, *args, **kwargs):
     ''' low-level support for Conc creation in another Env '''
 
     ConcId = _ConcIdMgr.new()
@@ -269,7 +274,6 @@ def __create_remote_Conc(Mgr, RemoteEnvId, CallingModule, ConcClass, *args, **kw
         ei = exc_info()
         ftb = format_exception(ei[0], ei[1], ei[2])
         raise AsyncExecutionError(ei[0].__name__, ei[1], ''.join(ftb))
-        return None
 
     return NewName
 
@@ -293,10 +297,10 @@ def create_Concs(ConcClass, *args, Mgr=None, LocType=LocType.Auto, LocVal=None, 
     if LocType == LocType.EnvId:
         for w in range(Num):
             if LocVal == my_EnvId():
-                TheWorkers.append(__create_local_Conc(Mgr, CallingModule, ConcClass, *args, **kwargs))
+                TheWorkers.append(__create_local_Conc__(Mgr, CallingModule, ConcClass, *args, **kwargs))
 
             else:
-                TheWorkers.append(__create_remote_Conc(Mgr, LocVal, CallingModule, ConcClass, *args, **kwargs))
+                TheWorkers.append(__create_remote_Conc__(Mgr, LocVal, CallingModule, ConcClass, *args, **kwargs))
 
 
     elif LocType == LocType.Auto:
@@ -307,10 +311,10 @@ def create_Concs(ConcClass, *args, Mgr=None, LocType=LocType.Auto, LocVal=None, 
             AutoLoc = _EnvTable.next_AutoEnvId()
 
             if AutoLoc == my_EnvId():
-                TheWorkers.append(__create_local_Conc(Mgr, CallingModule, ConcClass, *args, **kwargs))
+                TheWorkers.append(__create_local_Conc__(Mgr, CallingModule, ConcClass, *args, **kwargs))
 
             else:
-                TheWorkers.append(__create_remote_Conc(Mgr, AutoLoc, CallingModule, ConcClass, *args, **kwargs))
+                TheWorkers.append(__create_remote_Conc__(Mgr, AutoLoc, CallingModule, ConcClass, *args, **kwargs))
 
 
     elif LocType == LocType.PerEnv:
@@ -321,10 +325,10 @@ def create_Concs(ConcClass, *args, Mgr=None, LocType=LocType.Auto, LocVal=None, 
             NumEnvs = _EnvTable.num_Envs()
             for Loc in range(NumEnvs):
                 if Loc == my_EnvId():
-                    TheWorkers.append(__create_local_Conc(Mgr, CallingModule, ConcClass, *args, **kwargs))
+                    TheWorkers.append(__create_local_Conc__(Mgr, CallingModule, ConcClass, *args, **kwargs))
 
                 else:
-                    TheWorkers.append(__create_remote_Conc(Mgr, Loc, CallingModule, ConcClass, *args, **kwargs))
+                    TheWorkers.append(__create_remote_Conc__(Mgr, Loc, CallingModule, ConcClass, *args, **kwargs))
 
     else:
         raise NotImplementedError(f'LocType {LocType} not supported')
