@@ -176,4 +176,19 @@ class Corps(Conc):
         self.__kill__()
 
 
+    def is_Ext(self):
+        return self.Ext
+
+
+    def my_Tag(self):
+        return self.Tag
+
+
+    def __repr__(self):
+        if self.is_Ext() == True:
+            CorpsType = 'Ext'
+        else:
+            CorpsType = 'Cont'
+
+        return f'{CorpsType}Corps {self.my_Tag()} {self.ConcAddr}'
 
