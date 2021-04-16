@@ -224,11 +224,10 @@ class Name():
 
 
     def __repr__(self):
-        # return ''.join((f'Name({object.__getattribute__(self, "Proxy").___target___} ',
-        #                                                 f'{object.__getattribute__(self, "TheModuleName")}.',
-        #                                                 f'{object.__getattribute__(self, "TheClassName")})'))
-        return f'{object.__getattribute__(self, "Proxy").___target___}'
-
+         return ''.join((f'{object.__getattribute__(self, "Proxy").___target___} ',
+                                                         f'Class {object.__getattribute__(self, "TheClassName")} in ',
+                                                         f'{object.__getattribute__(self, "TheModuleName")}.py'))
+        #return f'{object.__getattribute__(self, "Proxy").___target___}'
 
 
 
