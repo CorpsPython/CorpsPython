@@ -161,7 +161,11 @@ class LocType(IntEnum):
     Cluster = 4
     Region = 5
 
+##############################
 
+#  Managed vs unmanaged in Api  ?????
+
+###############################
 def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, ConfigFiles=[], \
                                                                         LocType=LocType.Auto, LocVal=None, **kwargs):
     ''' create an ExtCorps from a script or an ExtCorps or ContCorps from calling Corps '''
@@ -172,7 +176,8 @@ def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, ConfigFil
     CallingModule = getmodule(frm[0])
 
     # Store kwargs for new Corps (will be processed by ConcMeta)
-    #   Mgr, Tag, Ext/Cont,
+    kwargs['Tag'] = Tag
+    kwargs['Ext'] = Ext
     kwargs['ConfigFiles'] = ConfigFiles
 
     # Create ExtCorps on this Host from a Script caller (Ext must be True)
@@ -269,7 +274,6 @@ def __create_remote_Conc__(Mgr, RemoteEnvId, CallingModule, ConcClass, *args, **
         ei = exc_info()
         ftb = format_exception(ei[0], ei[1], ei[2])
         raise AsyncExecutionError(ei[0].__name__, ei[1], ''.join(ftb))
-        return None
 
     return NewName
 
