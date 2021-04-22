@@ -135,10 +135,10 @@ from Name import proxy, Name
 from Env import EnvName    # EnvName dynamically genned by proxy()
 from EnvGlobals import _ConcIdMgr, my_EnvId, _Addr2Conc, _EnvTable, my_Port, my_Ip, my_EnvStatus
 from EnvAddrSpace import CORPSMGR_ENVID
-from ConcIdMgr import ENVMGR_CONCID, CORPS_CONCID
+from ConcIdMgr import ENVMGR_CONCID, CORPSMGR_CONCID, CORPS_CONCID
 from enum import IntEnum
 from Conc import Conc
-from Corps import Corps
+import Corps
 from sys import exc_info
 from Exceptions import AsyncExecutionError
 from traceback import format_exception
@@ -161,16 +161,13 @@ class LocType(IntEnum):
     Cluster = 4
     Region = 5
 
-##############################
 
-#  Managed vs unmanaged in Api  ?????
 
-###############################
-def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, ConfigFiles=[], \
+def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, Managed=True, ConfigFiles=[], \
                                                                         LocType=LocType.Auto, LocVal=None, **kwargs):
     ''' create an ExtCorps from a script or an ExtCorps or ContCorps from calling Corps '''
 
-    assert issubclass(CorpsClass, Corps) == True, f'{CorpsClass.__name__} is not a type of Corps'
+    assert issubclass(CorpsClass, Corps.Corps) == True, f'{CorpsClass.__name__} is not a type of Corps'
 
     frm = stack()[1]
     CallingModule = getmodule(frm[0])
@@ -184,11 +181,24 @@ def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, ConfigFil
     # Mgr stays None for ExtCorps w/ no Mgr
     EnvStatus = my_EnvStatus()
     if EnvStatus == MajorStatus.Running:
-        print(f'create_Corps "{Tag}"  E n v S t a t u s: {MajorStatus.Running.name} == {EnvStatus.name}?')
-        return
+        # The CorpsMgr will do the work
+        print(f'create_Corps "{Tag}"  EnvStatus: {EnvStatus.name}')
+
+        CorpsMgrConcAddr = ConcAddr(CORPSMGR_ENVID, CORPSMGR_CONCID, CORPSMGR_ENVID)
+        TheCorpsMgr = Corps.CorpsMgrName(CorpsMgrConcAddr)
+
+        FutRet = TheCorpsMgr.create_Corps(CallingModule.__name__, CorpsClass.__name__, Mgr, Ext, Managed, LocType, \
+                                                                                           LocVal, *args, **kwargs)
+
+        # Process return
+        # Exception?
+        Ret = FutRet.Ret # Ret is a tuple
+        NewCorpsIp = Ret[0]
+        NewCorpsPort = Ret[1]
 
     elif EnvStatus == MajorStatus.Nonexistent:
-        print(f'create_Corps "{Tag}"  E n v S t a t u s: {MajorStatus.Nonexistent.name} == {EnvStatus.name}?')
+        # Called from a script...create the new Corps in another process
+        print(f'create_Corps "{Tag}"  EnvStatus: {EnvStatus.name}')
 
         WorkerQueue = Queue()
 
@@ -210,19 +220,17 @@ def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, ConfigFil
     return NewName
 
 
-def __other_process_create_Corps__(CallingModule, CorpsClass, WorkerQueue, *args, **kwargs):
+def __other_process_create_Corps__(CallingModuleName, CorpsClassName, WorkerQueue, *args, **kwargs):
     '''
         Create a Corps in a new process
-
-        CallingModule and ConcClass are text names
     '''
 
     # Find the CorpsClass object
-    TheCallingModule = import_module(CallingModule)
-    ConcClassInModule = getattr(TheCallingModule, CorpsClass)
+    TheCallingModule = import_module(CallingModuleName)
+    CorpsClassInModule = getattr(TheCallingModule, CorpsClassName)
 
     # Create the Corps
-    NewConc = ConcClassInModule(*args, **kwargs)
+    NewCorps = CorpsClassInModule(*args, **kwargs)
 
     # Return data to calling process
     WorkerQueue.put([my_Ip(), my_Port()])
