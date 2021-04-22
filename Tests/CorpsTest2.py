@@ -120,6 +120,39 @@ class MgrCorps(Corps):
         pass
 
 
+class TestCorps1(Corps):
+    def __init__(self):
+        print(f'{self.my_Tag()} created')
+        super().__init__()
+        self.start()
+
+    def runit(self):
+        print(f'{self.my_Tag()} running')
+        return True
+
+    def cleanup(self):
+        print(f'{self.my_Tag()} exiting')
+
+
+class TestCorps(Corps):
+    def __init__(self):
+        print(f'{self.my_Tag()} created')
+        super().__init__()
+        self.TheTestCorps1 = create_Corps(TestCorps1, Tag='T e s t C o r p s  1', ConfigFiles=self.ConfigFiles)
+        self.start()
+
+    def runit(self):
+        print(f'{self.my_Tag()} running')
+
+        FutRet = self.TheTestCorps1.runit()
+        Ret = FutRet.Ret
+        self.TheTestCorps1.exit()
+        return True
+
+    def cleanup(self):
+        print(f'{self.my_Tag()} exiting')
+
+
 def run_CorpsTest2(Version, ConfigFiles, P):
     '''
         Driver function (P is a CorpsTestParm and we will ignore most attributes).
@@ -128,7 +161,14 @@ def run_CorpsTest2(Version, ConfigFiles, P):
 
     print('\n\nT e s t   2\n')
 
-    # TheMgrCorps = create_Corps(MgrCorps, P.CorpsDepth, 0, P.NumClientsServers, None, Ext=True, Tag='MgrCorps.0')
+    TheTestCorps = create_Corps(TestCorps, Tag='T e s t C o r p s', ConfigFiles=ConfigFiles)
+    FutRet = TheTestCorps.runit()
+    Ret = FutRet.Ret
+    TheTestCorps.exit()
+    print(f'run_CorpsTest2 exiting')
+
+    # TheMgrCorps = create_Corps(MgrCorps, P.CorpsDepth, 0, P.NumClientsServers, None, Ext=True, Tag='MgrCorps.0', \
+    #                                                                                           ConfigFiles=ConfigFiles)
     #
     # print(f'New Corps {TheMgrCorps.my_Tag().Ret} {TheMgrCorps}')
     #
@@ -145,5 +185,5 @@ def run_CorpsTest2(Version, ConfigFiles, P):
     # except:
     #     print(f'\nC o r p s   P y t h o n   T e s t   2   E x c e p t i o n: exec_info: {exc_info()}\n')
 
-    print('\nTestCorps2 exiting')
+    #print('\nTestCorps2 exiting')
     #TheMgrCorps.exit()
