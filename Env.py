@@ -108,16 +108,14 @@ class Env(Conc):
         return True
 
 
-    def rem2loc_create_Conc(self, NewConcAddr, CallingModule, ConcClass, *args, **kwargs):
+    def rem2loc_create_Conc(self, NewConcAddr, CallingModuleName, ConcClassName, *args, **kwargs):
         '''
             Create a Conc for another Env to be hosted in our Env
-
-            CallingModule and ConcClass are text names
         '''
 
         # Find the Class object
-        TheCallingModule = import_module(CallingModule)
-        ConcClassInModule = getattr(TheCallingModule, ConcClass)
+        TheCallingModule = import_module(CallingModuleName)
+        ConcClassInModule = getattr(TheCallingModule, ConcClassName)
 
         # Create the Conc
         NewConc = ConcClassInModule(*args, **kwargs)
