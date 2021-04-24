@@ -46,7 +46,7 @@ if __name__ == '__main__':
         0.1: CorpsTestParms(1, 1, 1, 1, 0, 1),
         1: CorpsTestParms(1, 1, 1, 1, 1, 1),
         2: CorpsTestParms(1, 2, 2, 2, 2, 10),
-        3: CorpsTestParms(2, 3, 3, 3, 3, 50),
+        3: CorpsTestParms(2, 4, 3, 3, 3, 50),
 
         2.1: CorpsTestParms(1, 2, 1, 1, 1, 1),
         3.1: CorpsTestParms(1, 3, 1, 1, 1, 1),
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     os.environ['NumEnvs'] = str(P.NumEnvs)
 
     ConfigFiles = ['Tests/CorpsTestConfig.py']
-    CorpsPythonVersion = 'C o r p s   P y t h o n   0 . 1 . 2'
+    CorpsPythonVersion = 'C o r p s   P y t h o n   0 . 1 . 3'
 
 
     print(f'\n{CorpsPythonVersion}   T e s t i n g   S t a r t e d')

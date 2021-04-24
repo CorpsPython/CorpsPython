@@ -105,7 +105,7 @@ _Addr2Conc = Addr2Conc()
 
 _ThreadPool = ThreadPool()
 
-_EnvTable = EnvTable(CORPSMGR_ENVID, MAX_ENVID)
+_EnvTable = EnvTable(MIN_ENVID, MAX_ENVID)
 
 _ContCorpsEnvTable = EnvTable(MIN_CONT_CORPS_ENVID, MAX_CONT_CORPS_ENVID)
 

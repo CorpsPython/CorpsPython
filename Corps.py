@@ -37,12 +37,24 @@ from Env import Env, EnvName    # EnvName is dynamically genned by proxy()
 from EnvGlobals import TheThread, NullConcAddr, _ConcIdMgr, _Addr2Conc, DefaultEnvRecord, _EnvTable,  my_Ip, my_Port
 from os import getpid, kill
 from multiprocessing import Process, Queue
-from EnvAddrSpace import MIN_ENVID, MAX_ENVID, CORPSMGR_ENVID
+from EnvAddrSpace import MIN_ENVID, MIN_ENVID_plus_1, MAX_ENVID, CORPSMGR_ENVID
 from ConcIdMgr import ENVMGR_CONCID, CORPSMGR_CONCID, CORPS_CONCID
 from signal import SIGTERM
 from logging import info
 from CorpsStatus import MajorStatus, MinorStatus
+import Workers
 
+
+
+
+def EnvIdGen(MinEnvId, MaxEnvId):
+    for EnvId in range(MaxEnvId - MinEnvId + 1):
+        yield EnvId + MinEnvId
+
+
+def EnvNameGen(MinEnvId, MaxEnvId):
+    for EnvId in range(MaxEnvId - MinEnvId + 1):
+        yield EnvName(ConcAddr(CORPSMGR_ENVID, ENVMGR_CONCID, EnvId + MinEnvId))
 
 
 class CorpsMgr(Conc):
@@ -75,8 +87,8 @@ class CorpsMgr(Conc):
         # Boot all other Envs in this Corps and get their EnvRecord Spec
         # ...Everything is on this Host
         CorpsMgrQueue = Queue()
-        for i in range(NumEnvs-1):
-            NewEnvId = i + MIN_ENVID
+        EnvIds = EnvIdGen(MIN_ENVID_plus_1, NumEnvs-1)
+        for NewEnvId in EnvIds:
             NewEnv = Process(target=Env, args=(NewEnvId, CorpsMgrQueue, ConfigFiles))
             NewEnv.start()
 
@@ -91,17 +103,16 @@ class CorpsMgr(Conc):
         info(f'CorpsMgr {self.my_Name()} EnvTable:\n{_EnvTable}')
 
         # Send EnvRecordSpecs to all Envs except ours
-        for i in range(NumEnvs-1):
-            RemoteEnvId = i + MIN_ENVID
-            EnvConcAddr = ConcAddr(CORPSMGR_ENVID, ENVMGR_CONCID, RemoteEnvId)
-            RemoteEnv = EnvName(EnvConcAddr)
+        EnvNames = EnvNameGen(MIN_ENVID_plus_1, NumEnvs-1)
+        FutRets = []
+        for RemoteEnv in EnvNames:
+            FutRets.append(RemoteEnv.init_EnvTable(EnvRecordSpecs))
 
-            FutRes = RemoteEnv.init_EnvTable(EnvRecordSpecs)
-            Ret = FutRes.Ret
+        for FutRet in FutRets:
+            Ret = FutRet.Ret
 
             assert Ret == True,\
-                        f'CorpsMgr {self.my_Name()} Process {getpid()} error initing EnvTable in Env {RemoteEnvId}'
-
+                f'CorpsMgr {self.my_Name()} Process {getpid()} error initing EnvTable in Env {RemoteEnv.___target___}'
 
         # We're up!
         self.MajorStatus = MajorStatus.Running
@@ -111,6 +122,19 @@ class CorpsMgr(Conc):
         TheThread.TheConcAddr = NullConcAddr
 
 
+    def create_Corps(self, ModuleName, CorpsClassName, Mgr, is_Ext, Managed, LocType, LocVal, *args, **kwargs):
+        WorkerQueue = Queue()
+
+        NewCorpsProcess = Process(target=Workers.__other_process_create_Corps__, \
+                              args=(ModuleName, CorpsClassName, WorkerQueue, *args), kwargs=kwargs)
+        NewCorpsProcess.start()
+
+        NewCorpsData = WorkerQueue.get()
+        NewCorpsIp = NewCorpsData[0]
+        NewCorpsPort = NewCorpsData[1]
+        return (NewCorpsIp, NewCorpsPort)
+
+
     def __kill__(self):
         pid = getpid()
         self.MajorStatus = MajorStatus.Exiting
@@ -118,10 +142,8 @@ class CorpsMgr(Conc):
 
         # Request exit for all Envs except ours
         NumEnvs = _EnvTable.num_Envs()  # assumes EnvIds are sequential (not true for ContCorps and ExtCorps)
-        for i in range(NumEnvs-1):
-            RemoteEnvId = i + MIN_ENVID
-            EnvConcAddr = ConcAddr(CORPSMGR_ENVID, ENVMGR_CONCID, RemoteEnvId)
-            RemoteEnv = EnvName(EnvConcAddr)
+        EnvNames = EnvNameGen(MIN_ENVID_plus_1, NumEnvs-1)
+        for RemoteEnv in EnvNames:
             RemoteEnv.__kill__()
 
         # Now us
@@ -154,7 +176,8 @@ class Corps(Conc):
         # Make sure we can be found
         _Addr2Conc.register(self, self.ConcAddr)
 
-        info(f'Corps {self.my_Name()} initialized, starting...')
+        #info(f'Corps {self.my_Name()} initialized, starting...')
+        print(f'Corps {self} __init__ running, starting...')
 
         # The thread is no longer assigned, so cleanup
         TheThread.TheConcAddr = NullConcAddr
