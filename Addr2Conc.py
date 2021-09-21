@@ -28,7 +28,7 @@ class Addr2Conc():
 
         anotherConc = None
         try:
-            anotherConc = self.Dict.get(ConcKey)
+            anotherConc = self.Dict[ConcKey]
 
         except:
             pass
@@ -55,7 +55,7 @@ class Addr2Conc():
 
         aConc = None
         try:
-            aConc = self.Dict.get(ConcKey)
+            aConc = self.Dict[ConcKey]
 
         except:
             pass
@@ -74,7 +74,7 @@ class Addr2Conc():
         self.Lock.acquire()
 
         try:
-            aConc = self.Dict.get(ConcKey)
+            aConc = self.Dict[ConcKey]
 
         except:
             pass
