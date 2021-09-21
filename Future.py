@@ -46,7 +46,6 @@
         Raises a AsyncLocalMaxRetries Exception if MaxTries have been attempted and all results are not complete.  If
         a Worker caller of wait_next is providing a service for another Worker, raising a AsyncRemoteMaxRetries
         Exception is probably the correct response to receiving a AsyncLocalMaxRetries Exception from wait_next.
-
 '''
 
 '''
