@@ -19,7 +19,6 @@
     m y _ N a m e ( )
 
     Returns a new Name of the Conc instance.
-
 '''
 
 '''
@@ -97,9 +96,10 @@ class __Conc():
         while self.MsgQ.empty() == False:
             MsgBody = self.MsgQ.get()
 
-            Method = getattr(self.__class__, MsgBody.MethodName)
-
             RetBody = CorpsReturn()
+
+            # todo: handle exception
+            Method = getattr(self.__class__, MsgBody.MethodName)
 
             # Make sure we haven't already completed this particular request from this client on a previous attempt
             Ret = self.ResultsCache.get(MsgBody.MsgId)
@@ -132,7 +132,7 @@ class __Conc():
                 send_ret = MsgBody.MsgHdlr.send_msg(RetBody)
 
             except:
-                error(f'{self.ConcAddr} main: {exc_info()[1]}')
+                error(f'{self.ConcAddr} main: {exc_info()}...{exc_info()[0]}...{exc_info()[1]}...{exc_info()[2]}')
                 MsgBody.MsgHdlr.close()
                 break
 
