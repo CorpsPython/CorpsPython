@@ -21,8 +21,9 @@
 MAX_ENVID = pow(2, 31)-1
 MIN_ENVID_plus_1 = 1
 
-# CorpsMgr Env
+# CorpsMgr Env, Corps Env
 CORPSMGR_ENVID = 0
+CORPS_ENVID = CORPSMGR_ENVID
 MIN_ENVID = CORPSMGR_ENVID
 
 # Reserved
