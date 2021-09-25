@@ -51,7 +51,6 @@
             Number of Concs per Loc
 
         *args and **kwargs are regular parameters to Conc class's __init__
-
 '''
 
 
@@ -145,6 +144,7 @@ from traceback import format_exception
 from importlib import import_module
 from multiprocessing import Process, Queue
 from CorpsStatus import MajorStatus
+from EnvRecord import XferCorpsEnvRecord
 
 
 
@@ -163,11 +163,13 @@ class LocType(IntEnum):
 
 
 
-def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, Managed=True, ConfigFiles=[], \
+def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, Managed=False, ConfigFiles=[], \
                                                                         LocType=LocType.Auto, LocVal=None, **kwargs):
     ''' create an ExtCorps from a script or an ExtCorps or ContCorps from calling Corps '''
 
     assert issubclass(CorpsClass, Corps.Corps) == True, f'{CorpsClass.__name__} is not a type of Corps'
+
+    # todo: make sure inputs are clean/consistent
 
     frm = stack()[1]
     CallingModule = getmodule(frm[0])
@@ -177,29 +179,24 @@ def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, Managed=T
     kwargs['Ext'] = Ext
     kwargs['ConfigFiles'] = ConfigFiles
 
-    # Create ExtCorps on this Host from a Script caller (Ext must be True)
-    # Mgr stays None for ExtCorps w/ no Mgr
     EnvStatus = my_EnvStatus()
     if EnvStatus == MajorStatus.Running:
-        # The CorpsMgr will do the work
-        print(f'create_Corps "{Tag}"  EnvStatus: {EnvStatus.name}')
-
+        # Called from an existing Corps...the CorpsMgr will do the work
         CorpsMgrConcAddr = ConcAddr(CORPSMGR_ENVID, CORPSMGR_CONCID, CORPSMGR_ENVID)
         TheCorpsMgr = Corps.CorpsMgrName(CorpsMgrConcAddr)
 
-        FutRet = TheCorpsMgr.create_Corps(CallingModule.__name__, CorpsClass.__name__, Mgr, Ext, Managed, LocType, \
+        FutRet = TheCorpsMgr.create_Corps(CallingModule.__name__, CorpsClass.__name__, Mgr, Tag, Ext, Managed, LocType, \
                                                                                            LocVal, *args, **kwargs)
+        # todo: Test for Exception
 
-        # Process return
-        # Exception?
-        Ret = FutRet.Ret # Ret is a tuple
-        NewCorpsIp = Ret[0]
-        NewCorpsPort = Ret[1]
+        NewXferCorpsEnvRecord = FutRet.Ret
+
+        NewCorps_EnvId = NewXferCorpsEnvRecord.LocEnvId
+        NewCorps_Ip = NewXferCorpsEnvRecord.IpAddr
+        NewCorps_Port = NewXferCorpsEnvRecord.Port
 
     elif EnvStatus == MajorStatus.Nonexistent:
         # Called from a script...create the new Corps in another process
-        print(f'create_Corps "{Tag}"  EnvStatus: {EnvStatus.name}')
-
         WorkerQueue = Queue()
 
         NewCorpsProcess = Process(target=__other_process_create_Corps__, \
@@ -207,11 +204,15 @@ def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, Managed=T
         NewCorpsProcess.start()
 
         NewCorpsData = WorkerQueue.get()
-        NewCorpsIp = NewCorpsData[0]
-        NewCorpsPort = NewCorpsData[1]
+        NewCorps_Ip = NewCorpsData[0]
+        NewCorps_Port = NewCorpsData[1]
 
 
-    NewConcAddr = ExtAddr(CORPSMGR_ENVID, CORPS_CONCID, CORPSMGR_ENVID, NewCorpsIp, NewCorpsPort)
+    # todo: Managed or Ext? see Corps/create_Corps()
+    if Managed == True:
+        NewConcAddr = ConcAddr(CORPSMGR_ENVID, CORPS_CONCID, NewCorps_EnvId)
+    else:
+        NewConcAddr = ExtAddr(CORPSMGR_ENVID, CORPS_CONCID, CORPSMGR_ENVID, NewCorps_Ip, NewCorps_Port)
 
     ConcClassProxy = proxy(CorpsClass, CorpsClass.__name__+'Name', CallingModule)
     NewProxy = ConcClassProxy(NewConcAddr)
@@ -222,10 +223,11 @@ def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, Managed=T
 
 def __other_process_create_Corps__(CallingModuleName, CorpsClassName, WorkerQueue, *args, **kwargs):
     '''
-        Create a Corps in a new process
+        Create a Corps in a new process (assumes we are running in that process)
     '''
 
     # Find the CorpsClass object
+    # todo: exceptions upon either step failing
     TheCallingModule = import_module(CallingModuleName)
     CorpsClassInModule = getattr(TheCallingModule, CorpsClassName)
 

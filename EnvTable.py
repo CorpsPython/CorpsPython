@@ -230,6 +230,7 @@ class CorpsEnvTable(EnvTableBase):
         super().__init__(MinEnvId, MaxEnvId)
         self.Tag2Id = dict()
         self.Id2Tag = dict()
+        self.Lock2 = Lock()     # for us only, self.Lock to be used by EnvTableBase only
 
 
     def register(self, EnvId, aCorpsEnvRecord):
@@ -242,7 +243,7 @@ class CorpsEnvTable(EnvTableBase):
 
         assert aCorpsEnvRecord.Tag != '', f'CorpsEnvTable register: Tag must be non-empty'
 
-        self.Lock.acquire()
+        self.Lock2.acquire()
 
         anEnvId = None
         try:
@@ -250,10 +251,11 @@ class CorpsEnvTable(EnvTableBase):
 
         except:
             anEnvId = super().register(EnvId, aCorpsEnvRecord)
+
             self.Tag2Id[aCorpsEnvRecord.Tag] = anEnvId
             self.Id2Tag[anEnvId] = aCorpsEnvRecord.Tag
 
-        self.Lock.release()
+        self.Lock2.release()
 
         return anEnvId
 
@@ -263,7 +265,7 @@ class CorpsEnvTable(EnvTableBase):
 
         assert Tag != '' or EnvId != None, f'CorpsEnvTable unregister: Tag {Tag} or EnvId {EnvId}must be valid'
 
-        self.Lock.acquire()
+        self.Lock2.acquire()
 
         anEnvId = EnvId
         aTag = Tag
@@ -287,6 +289,6 @@ class CorpsEnvTable(EnvTableBase):
             del self.Id2Tag[anEnvId]
             super().unregister(anEnvId)
 
-        self.Lock.release()
+        self.Lock2.release()
 
         assert aTag != '' and anEnvId != None, f'CorpsEnvTable unregister: Tag {aTag} or EnvId {anEnvId} not found'

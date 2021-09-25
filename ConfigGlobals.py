@@ -1,9 +1,8 @@
 
 '''
-
     Config Global attributes for each instantiated Corps with defaults.
 
-    Defaults can be overridden by user-supplied Config files passed to load_Corps() in Workers.py.
+    Defaults can be overridden by user-supplied Config files passed to create_Corps() in Workers.py.
 
     Most of these attributes are for experts only!
 
@@ -61,7 +60,7 @@
     Number of seconds before a server network operation times out
 
 
-    N e t w o r k i n g _ M a x _ Q u u e u e d _ C o n n _ R e q u e s t s   =   100
+    N e t w o r k i n g _ M a x _ Q u e u e d _ C o n n _ R e q u e s t s   =   100
 
     Maximum number of connecton requests in queue before refusing any more
 
@@ -79,7 +78,6 @@
     R e s u l t s C a c h e _ M i n _ C l e a n _ I n t e r v a l   =   timedelta(seconds=2)
 
     Minimum time between cleaning of old entries
-
 '''
 
 
@@ -106,13 +104,13 @@ ThreadPool_MaxQueueLength = 10
 
 ''' Networking '''
 # Maximum number of attempts to connect to a service
-Networking_Max_Connection_Attempts = 25
+Networking_Max_Connection_Attempts = 100
 
 # Number of seconds before a client network operation times out
-Networking_Client_Timeout = 10
+Networking_Client_Timeout = 60
 
 # Number of seconds before a server network operation times out
-Networking_Server_Timeout = 10
+Networking_Server_Timeout = 600
 
 # Maximum number of connecton requests in queue before refusing any more
 Networking_Max_Queued_Conn_Requests = 100

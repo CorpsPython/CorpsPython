@@ -9,3 +9,14 @@ Network: Disconnect problems (Windows 7 only?, LocalHost only?)
     happening and find a solution.
 
 
+Corps: Booting Envs is slow (~0.2s/Env)
+
+    The performance code is currently commented out in Corps.py and Env.py.
+
+
+ProxyMakeRequest: How to handle Null TheConcAddr?
+
+    This occurs when message passing from a script to a Worker.  The code that detects this in ___proxy_make_request()
+    is commented out for now.
+
+

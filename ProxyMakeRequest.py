@@ -48,9 +48,9 @@ def ___proxy_make_request(self, ServerAddr, MethodName, *Args, **KwArgs):
 
     TheConcAddr = TheThread.TheConcAddr     # the client Conc whose Thread is running and who called the proxy
 
-    from EnvGlobals import NullConcAddr
-    if TheConcAddr == NullConcAddr:
-        print(f'proxy: Null ConcAddr on request to {ServerAddr} for {MethodName}()')
+    # from EnvGlobals import NullConcAddr
+    # if TheConcAddr == NullConcAddr:
+    #     print(f'proxy: Null ConcAddr on request to {ServerAddr} for {MethodName}()')
 
     # Initialize a request
     MsgBody = CorpsRequest()
@@ -167,11 +167,9 @@ def connect_to_server(ServerAddr):
             TheEnvTable = _EnvTable
 
         elif MIN_EXT_CORPS_ENVID <= LocEnvId <= MAX_EXT_CORPS_ENVID:
-            print(f'connect to server: ExtCorps {ServerAddr}')
             TheEnvTable = _ExtCorpsEnvTable
 
         elif MIN_CONT_CORPS_ENVID <= LocEnvId <= MAX_CONT_CORPS_ENVID:
-            print(f'connect to server: ContCorps {ServerAddr}')
             TheEnvTable = _ContCorpsEnvTable
 
         else:

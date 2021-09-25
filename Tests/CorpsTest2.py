@@ -24,27 +24,24 @@ from traceback import format_exception
 
 
 class WorkerCorps(Corps):
-    def __init__(self, GlobalWorkerCorps):
-        print(f'{self} initing')
+    def __init__(self):
         super().__init__()
-        self.GlobalWorker = GlobalWorkerCorps
 
-        #print(f'{self} starting')
+        #print(f'{self.my_Tag()} starting')
         self.start()
 
 
     def run_tests(self):
-        print(f'{self} testing')
-
-        if self.GlobalWorker != None:
-            self.GlobalWorker.run_tests()
-
+        print(f'{self.my_Tag()} testing completed')
         return True
 
 
+    def cleanup(self):
+        print(f'{self.my_Tag()} exiting')
+
+
 class MgrCorps(Corps):
-    def __init__(self, MaxLevel, Level, NumWorkers, GlobalWorker):
-        print(f'{self} initing')
+    def __init__(self, MaxLevel, Level, NumWorkers, GlobalWorker, ConfigFiles=[]):
         super().__init__()
 
         self.ExtWorkers = []
@@ -53,103 +50,95 @@ class MgrCorps(Corps):
         self.WorkerTags = []    # incl next MgrCorps and GlobalWorkerCorps
 
         if GlobalWorker == None:
-            Tag = f'GlobalWorkerCorps Level {Level} use'
+            Tag = f'GlobalWorkerCorps'
             self.WorkerTags.append(Tag)
-            self.GlobalWorker = create_Corps(WorkerCorps, Ext=True, Tag=Tag)
-
-        if Level != MaxLevel:
-            Tag = 'MgrCorps.' + f'{Level + 1}'
-            self.NextMgr = create_Corps(MgrCorps, MaxLevel, Level + 1, NumWorkers, self.GlobalWorker, Ext=True, Tag=Tag)
+            self.GlobalWorker = create_Corps(WorkerCorps, Managed=False, Ext=True, Tag=Tag, ConfigFiles=ConfigFiles)
+            self.GlobalCreator = True
+            #print(f'{self.my_Tag()} created GlobalWorker {Tag} ')
         else:
-            Tag = "No next MgrCorps"
+            self.GlobalWorker = GlobalWorker
+            self.GlobalCreator = False
+
+        if Level < MaxLevel:
+            Tag = 'MgrCorps.' + f'{Level + 1}'
+            self.NextMgr = create_Corps(MgrCorps, MaxLevel, Level + 1, NumWorkers, self.GlobalWorker, Managed=True, \
+                                                                        Ext=True, Tag=Tag, ConfigFiles=ConfigFiles)
+            self.WorkerTags.append(Tag)
+            #print(f'{self.my_Tag()} created MgrCorps {Tag}')
+        else:
             self.NextMgr = None
 
-        self.WorkerTags.append(Tag)
-            
         for i in range(NumWorkers):
             Tag = 'ExtWorkerCorps.' + f'{Level}.' + f'{i}'
             self.WorkerTags.append(Tag)
-            self.ExtWorkers.append(create_Corps(WorkerCorps, Ext=True, Tag=Tag))
+            self.ExtWorkers.append(create_Corps(WorkerCorps, Managed=True, Ext=True, Tag=Tag, ConfigFiles=ConfigFiles))
+            #print(f'{self.my_Tag()} created ExtCorps {Tag}')
 
         for i in range(NumWorkers):
             Tag = 'ContWorkerCorps.' + f'{Level}.' + f'{i}'
             self.WorkerTags.append(Tag)
-            self.ContWorkers.append(create_Corps(WorkerCorps, Ext=False, Tag=Tag))
+            self.ContWorkers.append(create_Corps(WorkerCorps, Managed=True, Ext=False, Tag=Tag, ConfigFiles=ConfigFiles))
+            #print(f'{self.my_Tag()} created ConCorps {Tag}')
 
-        print(f'{self} starting')
+
+        # todo: create Conc in Env 1 and pass various Corps to it to test
+
+
+        print(f'{self.my_Tag()} starting')
         self.start()
 
 
     def run_tests(self):
-        ''' Run all of the tests concurrently '''
+        ''' Run all of the tests concurrently
 
-        #print(f'{self} testing')
+            Must be in same order created for Rets and WorkerTags to be lined up
+        '''
+
+        print(f'{self.my_Tag()} testing started')
 
         Rets = []
+
+        # todo: have Conc test against one global, ext, and cont corps each
 
         if self.GlobalWorker != None:
             Rets.append(self.GlobalWorker.run_tests())
 
         if self.NextMgr != None:
             Rets.append(self.NextMgr.run_tests())
-        else:
-            Rets.append(None)
-            
+
         for ExtWorker in self.ExtWorkers:
             Rets.append(ExtWorker.run_tests())
-            
+
         for ContWorker in self.ContWorkers:
             Rets.append(ContWorker.run_tests())
 
+        # todo: test for True return
+        for i in range(len(Rets)):
+            try:
+                Ret = Rets[i].Ret
 
-        next_ret_i = wait_next(Rets)
-
-        for i in next_ret_i:
-            if Ret != None:
-                try:
-                    Ret = Rets[i].Ret
-
-                except:
-                    print(f'\nC o r p s   T e s t 2   W o r k e r  {self.WorkerTags[i]}' +
+            except:
+                print(f'\n{self.my_Tag()}:  {self.WorkerTags[i]}' +
                                                                 f'   E x c e p t i o n: exec_info: {exc_info()}\n')
+                return False
 
+        print(f'{self.my_Tag()} testing completed')
         return True
 
 
     def cleanup(self):
-        pass
+        if self.GlobalWorker != None and  self.GlobalCreator == True:
+            self.GlobalWorker.exit()
 
+        if self.NextMgr != None:
+            self.NextMgr.exit()
 
-class TestCorps1(Corps):
-    def __init__(self):
-        print(f'{self.my_Tag()} created')
-        super().__init__()
-        self.start()
+        for ExtWorker in self.ExtWorkers:
+            ExtWorker.exit()
 
-    def runit(self):
-        print(f'{self.my_Tag()} running')
-        return True
+        for ContWorker in self.ContWorkers:
+            ContWorker.exit()
 
-    def cleanup(self):
-        print(f'{self.my_Tag()} exiting')
-
-
-class TestCorps(Corps):
-    def __init__(self):
-        print(f'{self.my_Tag()} created')
-        super().__init__()
-        self.TheTestCorps1 = create_Corps(TestCorps1, Tag='T e s t C o r p s  1', ConfigFiles=self.ConfigFiles)
-        self.start()
-
-    def runit(self):
-        print(f'{self.my_Tag()} running')
-
-        FutRet = self.TheTestCorps1.runit()
-        Ret = FutRet.Ret
-        self.TheTestCorps1.exit()
-        return True
-
-    def cleanup(self):
         print(f'{self.my_Tag()} exiting')
 
 
@@ -161,29 +150,25 @@ def run_CorpsTest2(Version, ConfigFiles, P):
 
     print('\n\nT e s t   2\n')
 
-    TheTestCorps = create_Corps(TestCorps, Tag='T e s t C o r p s', ConfigFiles=ConfigFiles)
-    FutRet = TheTestCorps.runit()
-    Ret = FutRet.Ret
-    TheTestCorps.exit()
-    print(f'run_CorpsTest2 exiting')
+    # MgrCorps init: MaxLevel, Level, NumWorkers, GlobalWorker
+    #TheMgrCorps = create_Corps(MgrCorps, P.CorpsDepth, 1, P.NumClientsServers, None, Managed=False, Ext=True, \
+     #                                                                       Tag='MgrCorps.1', ConfigFiles=ConfigFiles)
+    TheMgrCorps = create_Corps(MgrCorps, 3, 1, 2, None, Managed=False, Ext=True, Tag='MgrCorps.1', \
+                                                                                           ConfigFiles=ConfigFiles)
 
-    # TheMgrCorps = create_Corps(MgrCorps, P.CorpsDepth, 0, P.NumClientsServers, None, Ext=True, Tag='MgrCorps.0', \
-    #                                                                                           ConfigFiles=ConfigFiles)
-    #
-    # print(f'New Corps {TheMgrCorps.my_Tag().Ret} {TheMgrCorps}')
-    #
-    # print(f'\n{Version} \nRunning on Host {my_Host()} ({my_Ip()}) Port {my_Port()}\n')
-    # print(f'Pickle:  {versions()}')
-    #
-    # Ret = TheMgrCorps.run_tests()
-    #
-    # try:
-    #     # wait here until testing completed
-    #     if Ret.Ret:
-    #         pass
-    #
-    # except:
-    #     print(f'\nC o r p s   P y t h o n   T e s t   2   E x c e p t i o n: exec_info: {exc_info()}\n')
+    print(f'\n{Version} \nRunning on Host {my_Host()} ({my_Ip()}) Port {my_Port()}\n')
+    print(f'Pickle:  {versions()}')
 
-    #print('\nTestCorps2 exiting')
-    #TheMgrCorps.exit()
+    print(f'TestCorps2 testing started')
+    Ret = TheMgrCorps.run_tests()
+
+    try:
+        # wait here until testing completed
+        if Ret.Ret:
+            pass
+
+    except:
+        print(f'\nC o r p s   P y t h o n   T e s t   2   E x c e p t i o n: exec_info: {exc_info()}\n')
+
+    print('\nTestCorps2 exiting')
+    TheMgrCorps.exit()

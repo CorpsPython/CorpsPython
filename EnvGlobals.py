@@ -17,8 +17,8 @@ from ThreadPool import ThreadPool
 from TcpFactory import TcpFactory
 from ConcAddr import ConcAddr
 from CorpsMsgHdlrFactory import CorpsMsgHdlrFactory
-from EnvRecord import EnvRecord
-from EnvTable import EnvTable
+from EnvRecord import EnvRecord, CorpsEnvRecord
+from EnvTable import EnvTable, CorpsEnvTable
 from socket import getfqdn, getaddrinfo, AF_INET
 from ipaddress import ip_address
 from EnvAddrSpace import *
@@ -107,9 +107,9 @@ _ThreadPool = ThreadPool()
 
 _EnvTable = EnvTable(MIN_ENVID, MAX_ENVID)
 
-_ContCorpsEnvTable = EnvTable(MIN_CONT_CORPS_ENVID, MAX_CONT_CORPS_ENVID)
+_ContCorpsEnvTable = CorpsEnvTable(MIN_CONT_CORPS_ENVID, MAX_CONT_CORPS_ENVID)
 
-_ExtCorpsEnvTable = EnvTable(MIN_EXT_CORPS_ENVID, MAX_EXT_CORPS_ENVID)
+_ExtCorpsEnvTable = CorpsEnvTable(MIN_EXT_CORPS_ENVID, MAX_EXT_CORPS_ENVID)
 
 TheTcpFactory = TcpFactory(_ThreadPool, _Addr2Conc)
 
@@ -117,4 +117,5 @@ TheCorpsMsgHdlrFactory = CorpsMsgHdlrFactory()
 
 DefaultEnvRecord = EnvRecord(TheCorpsMsgHdlrFactory, TheTcpFactory, my_Ip(), 0)
 
+DefaultCorpsEnvRecord = CorpsEnvRecord("No Tag", TheCorpsMsgHdlrFactory, TheTcpFactory, my_Ip(), 0)
 
