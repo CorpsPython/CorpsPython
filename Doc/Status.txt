@@ -2,14 +2,16 @@
 
 P r o j e c t   S t a t u s
 
-The current release version of Corps Python, 0.1.0, should be considered a Developer's Evaluation version.  It is
-located at github.com/CorpsPython/CorpsPython-Release0.1.0.
+The current release version of Corps Python, 0.1.5, should be considered a Developer's Evaluation version.
 
-It is a release version and is closed to new development.  The latest version currently under development can be found
-at github.com/CorpsPython/CorpsPython.
+Concs are fully supported.
 
-Prominent features such as multi-host Corps, Python functions as Workers (Funcs), multi-Corps interoperability
-(both External and Contained, private, Corps), Auto-Scaling, Auto-Healing, etc. are not yet operational.
+ExtCorps can be created from scripts or by other Corps, and ContCorps can be created by existing Corps.
+
+Interoperability between Concs, ExtCorps, and ContCorps is fully operational.
+
+Prominent features such as multi-host Corps, Python functions as Workers (Funcs), Auto-Scaling, Auto-Healing, etc. are
+not yet available.
 
 Some aspects of the current implementation are not in their final form.  All messaging between Workers uses the
 Tcp/IP V4 network stack.  The FastPath implementation for messaging within the same Env which uses inter-thread
@@ -32,10 +34,4 @@ developed for a single, multi-core, multi-processor host that are reasonably per
 For now a simple workaround for the lack of Funcs is adding a method per Python function to a Conc subclass (a
 Conc is a type of Worker for Python class-based objects).  The new method should mimic the api for the function.
 
-A workaround for Contained (private) Corps is to use Concs instead. See the Tutorial for the creation and use of Concs.
 
-There is no workaround for interoperability between External Corps.  Currently they can only be launched from scripts
-and the pathways for message passing between them are incomplete.  Contained and External Corps creation, message
-passing, and tear-down are the current development focus.  The Admin Daemon, which can create and control Corps and
-Envs on remote hosts, will be an External Corps and so multi-host functionality is dependent on External Corps
-operations.

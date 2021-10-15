@@ -56,6 +56,16 @@ def ___proxy_make_request(self, ServerAddr, MethodName, *Args, **KwArgs):
     MsgBody = CorpsRequest()
 
     MsgBody.MsgType = CorpsMsgType.ConcRequ
+
+    NoReply = 'NoReply'
+    NoReplyFlag = False
+    if NoReply in KwArgs:
+        if KwArgs[NoReply] == True:
+            MsgBody.MsgFlags |= NoReplyBitMask
+            NoReplyFlag = True
+
+        del KwArgs[NoReply]
+
     MsgBody.MsgId = ResultsCacheKey(my_Ip(), my_Port(), _MsgIdMgr.new())
     MsgBody.ClientAddr = TheConcAddr
     MsgBody.ServerAddr = ServerAddr
@@ -63,7 +73,6 @@ def ___proxy_make_request(self, ServerAddr, MethodName, *Args, **KwArgs):
     MsgBody.Args = Args
     MsgBody.KwArgs = KwArgs
 
-    FutRet = Future()
 
     Attempt = 1
     State = ProxyState.CONN
@@ -89,12 +98,29 @@ def ___proxy_make_request(self, ServerAddr, MethodName, *Args, **KwArgs):
                 State = ProxyState.CONN
                 continue
 
-            # success...schedule ___proxy_finish_request for another thread and return Future to client
+            # success...if client does not want a reply from the service return a None
+            # otw schedule ___proxy_finish_request for another thread and return Future to client
             # State is now implicitly ProxyState.RECV_RET for ___proxy_finish_request
             else:
-                cmd = lambda: ___proxy_finish_request(MsgHdlr, MsgBody, FutRet, Attempt)
-                _ThreadPool.put_cmd(cmd)
+                FutRet = Future()
 
+                if NoReplyFlag == True:
+                    RetBody = CorpsReturn()
+
+                    RetBody.Ret = None
+                    RetBody.MsgType = CorpsMsgType.ConcRet
+                    RetBody.ClientAddr = MsgBody.ClientAddr
+                    RetBody.ServerAddr = MsgBody.ServerAddr
+
+                    FutRet.__set_result_and_unlock__(RetBody)
+                    MsgHdlr.close()
+
+                else:
+                    cmd = lambda: ___proxy_finish_request(MsgHdlr, MsgBody, FutRet, Attempt)
+                    _ThreadPool.put_cmd(cmd)
+
+                # cmd = lambda: ___proxy_finish_request(MsgHdlr, MsgBody, FutRet, Attempt)
+                # _ThreadPool.put_cmd(cmd)
                 return FutRet
 
     # all attempts failed

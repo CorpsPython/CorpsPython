@@ -255,5 +255,7 @@ def run_CorpsTest0(Version, ConfigFiles, P):
 
 
     print('\nTestCorps0 exiting')
-    TheCorps0.exit()
+    Ret = TheCorps0.exit(NoReply=True)
+    assert Ret.Ret == None
+
 

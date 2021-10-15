@@ -66,7 +66,6 @@ class CorpsMgr(Conc):
 
         # Import the Config data here to make sure we get the version loaded by EnvMgr
         from ConfigGlobals import NumEnvs
-        print(f'CorpsMgr starting with {NumEnvs} Envs')
         assert NumEnvs < MAX_ENVID-MIN_ENVID+1, f'Number of Envs must be less than {MAX_ENVID-MIN_ENVID+1}'
 
         # Self-initialize
@@ -236,9 +235,9 @@ class Corps(Conc):
 
         # Send kill request to CorpsMgr
         CorpsMgrConcAddr = ConcAddr(CORPSMGR_ENVID, CORPSMGR_CONCID, CORPSMGR_ENVID)
-        CorpsMgrConc = CorpsMgrName(CorpsMgrConcAddr)
+        CorpsMgr = CorpsMgrName(CorpsMgrConcAddr)
 
-        CorpsMgrConc.__kill__()
+        CorpsMgr.__kill__(NoReply=True)
 
 
     def cleanup(self):
@@ -247,10 +246,9 @@ class Corps(Conc):
 
     def exit(self):
         self.cleanup()
-
         time.sleep(0.1)
-
         self.__kill__()
+        return True
 
 
     def is_Ext(self):

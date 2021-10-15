@@ -27,7 +27,7 @@ class WorkerCorps(Corps):
     def __init__(self):
         super().__init__()
 
-        #print(f'{self.my_Tag()} starting')
+        print(f'{self.my_Tag()} starting')
         self.start()
 
 
@@ -127,17 +127,19 @@ class MgrCorps(Corps):
 
 
     def cleanup(self):
+        # todo: no need to kill anything that is managed
+
         if self.GlobalWorker != None and  self.GlobalCreator == True:
-            self.GlobalWorker.exit()
+            self.GlobalWorker.exit(NoReply=True)
 
         if self.NextMgr != None:
-            self.NextMgr.exit()
+            self.NextMgr.exit(NoReply=True)
 
         for ExtWorker in self.ExtWorkers:
-            ExtWorker.exit()
+            ExtWorker.exit(NoReply=True)
 
         for ContWorker in self.ContWorkers:
-            ContWorker.exit()
+            ContWorker.exit(NoReply=True)
 
         print(f'{self.my_Tag()} exiting')
 
@@ -151,6 +153,8 @@ def run_CorpsTest2(Version, ConfigFiles, P):
     print('\n\nT e s t   2\n')
 
     # MgrCorps init: MaxLevel, Level, NumWorkers, GlobalWorker
+
+    # todo: put the original back
     #TheMgrCorps = create_Corps(MgrCorps, P.CorpsDepth, 1, P.NumClientsServers, None, Managed=False, Ext=True, \
      #                                                                       Tag='MgrCorps.1', ConfigFiles=ConfigFiles)
     TheMgrCorps = create_Corps(MgrCorps, 3, 1, 2, None, Managed=False, Ext=True, Tag='MgrCorps.1', \
@@ -171,4 +175,4 @@ def run_CorpsTest2(Version, ConfigFiles, P):
         print(f'\nC o r p s   P y t h o n   T e s t   2   E x c e p t i o n: exec_info: {exc_info()}\n')
 
     print('\nTestCorps2 exiting')
-    TheMgrCorps.exit()
+    TheMgrCorps.exit(NoReply=True)
