@@ -21,6 +21,10 @@ class CorpsMsgPriority(IntEnum):
     BaseRequ = 3        # ...lowest
 
 
+# MsgFlags
+NoReplyBitMask = 0x0001
+
+
 CORPSMSG_HDR_SIZE = 8
 
 MAX_BODY_LENGTH = pow(2,64)-1
@@ -30,6 +34,7 @@ class CorpsRequest():
     def __init__(self):
         self.MsgType = CorpsMsgType.ConcRequ
         self.MsgPriority = CorpsMsgPriority.BaseRequ
+        self.MsgFlags = 0
         self.MsgId = ResultsCacheKey(0,0,0)
         self.ClientAddr = 0
         self.ServerAddr = 0

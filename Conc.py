@@ -120,12 +120,17 @@ class __Conc():
                     RetBody.RetType = CorpsRetType.Ok
                     self.ResultsCache.set(MsgBody.MsgId, Ret)
 
-            # Done, return a response to the client
+            # Done, does client want a response?...
+            if MsgBody.MsgFlags & NoReplyBitMask:
+                # No
+                MsgBody.MsgHdlr.close()
+                break
+
+            # Yes, return a response to the client
             RetBody.Ret = Ret
             RetBody.MsgType = CorpsMsgType.ConcRet
             RetBody.ClientAddr = MsgBody.ClientAddr
             RetBody.ServerAddr = MsgBody.ServerAddr
-
 
             send_ret = False
             try:
@@ -140,7 +145,6 @@ class __Conc():
                 error(f'{self.ConcAddr} main: Error sending return')
                 MsgBody.MsgHdlr.close()
                 break
-
 
 
         # The thread is no longer assigned, so cleanup
