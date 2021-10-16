@@ -59,6 +59,11 @@ class Service0(base0, Conc):
         self.start()
 
 
+    def cleanup(self):
+        print(f'Service {self} cleaning up')
+        return True
+
+
 class Client0(Conc):
     '''
         Client0 is a Conc that runs test against a list of global services ("servers") and then against a list
@@ -154,6 +159,11 @@ class Client0(Conc):
     def cleanup(self):
         print(f'Client {self} cleaning up')
 
+        for ClientsServer in self.ClientsServers:
+            ClientsServer.exit()
+
+        return True
+
 
 class Corps0(Corps):
     '''
@@ -224,7 +234,12 @@ class Corps0(Corps):
 
     def cleanup(self):
         for Client in self.Clients:
-            Client.cleanup()
+            Client.exit()
+
+        for Server in self.Servers:
+            Server.exit()
+
+        return True
 
 
 def run_CorpsTest0(Version, ConfigFiles, P):

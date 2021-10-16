@@ -84,4 +84,4 @@ class Addr2Conc():
         self.Lock.release()
 
         assert aConc != None
-
+        return True
