@@ -8,6 +8,10 @@
     In long-running Corps we will eventually run out of Conc Ids and will need to keep track of what's been allocated
     and what's free.  Currently we just gen an exception via an assert.
 
+    The solution is to dealloc a concId when Concs cleanup by having it send a message to the Mgr's EnvMgr which calls
+    dealloc here (all code to be implemented).  We will need a way to keep track of alloc'd vs unalloc'd Ids (given the
+    size of the space, probably keeping track of ranges would be a reasonable way).
+
     All operations are protected by a lock.
 
     One instance per Env is instantiated in EnvGlobals.py.

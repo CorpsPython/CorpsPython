@@ -25,57 +25,57 @@
         NumEnvs = int(os.environ['NumEnvs'])
 
 
-    N u m E n v s   =   8
+    N u m E n v s
 
     Number of Environments when Corps is deployed
 
 
-    T h r e a d P o o l _ M i n T h r e a d s   =   10
+    T h r e a d P o o l _ M i n T h r e a d s
 
     Minimum number of threads in ThreadPool
 
 
-    T h r e a d P o o l _ T h r e a d s I n c   =   10
+    T h r e a d P o o l _ T h r e a d s I n c
 
     Number of threads added when ThreadPool's WorkQ's Length exceeds ThreadPool_MaxQueueLength
 
 
-    T h r e a d P o o l _ M a x Q u e u e L e n g t h   =   10
+    T h r e a d P o o l _ M a x Q u e u e L e n g t h
 
     Maximum length of ThreadPool's WorkQ before ThreadPool_ThreadsInc threads are added
 
 
-    N e t w o r k i n g _ M a x _ C o n n e c t i o n _ A t t e m p t s   =   25
+    N e t w o r k i n g _ M a x _ C o n n e c t i o n _ A t t e m p t s
 
     Maximum number of attempts to connect to a service
 
 
-    N e t w o r k i n g _ C l i e n t _ T i m e o u t   =   10
+    N e t w o r k i n g _ C l i e n t _ T i m e o u t
 
     Number of seconds before a client network operation times out
 
 
-    N e t w o r k i n g _ S e r v e r _ T i m e o u t   =   10
+    N e t w o r k i n g _ S e r v e r _ T i m e o u t
 
     Number of seconds before a server network operation times out
 
 
-    N e t w o r k i n g _ M a x _ Q u e u e d _ C o n n _ R e q u e s t s   =   100
+    N e t w o r k i n g _ M a x _ Q u e u e d _ C o n n _ R e q u e s t s
 
     Maximum number of connecton requests in queue before refusing any more
 
 
-    M a x _ M s g _ R e q u e s t _ A t t e m p t s   =   50
+    M a x _ M s g _ R e q u e s t _ A t t e m p t s
 
     Max round-trip attempts to send and respond to a Msg request between two Workers
 
 
-    R e s u l t s C a c h e _ M a x _ E n t r y _ T T L   =   timedelta(seconds=1)
+    R e s u l t s C a c h e _ M a x _ E n t r y _ T T L
 
     Maximum time to live for a Cache entry
 
 
-    R e s u l t s C a c h e _ M i n _ C l e a n _ I n t e r v a l   =   timedelta(seconds=2)
+    R e s u l t s C a c h e _ M i n _ C l e a n _ I n t e r v a l
 
     Minimum time between cleaning of old entries
 '''

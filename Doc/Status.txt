@@ -2,7 +2,7 @@
 
 P r o j e c t   S t a t u s
 
-The current release version of Corps Python, 0.1.5, should be considered a Developer's Evaluation version.
+The current release version of Corps Python, 0.1, should be considered a Developer's Evaluation version.
 
 Concs are fully supported.
 

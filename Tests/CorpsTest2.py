@@ -38,6 +38,7 @@ class WorkerCorps(Corps):
 
     def cleanup(self):
         print(f'{self.my_Tag()} exiting')
+        return True
 
 
 class MgrCorps(Corps):
@@ -127,7 +128,7 @@ class MgrCorps(Corps):
 
 
     def cleanup(self):
-        # todo: no need to kill anything that is managed
+        # todo: no need to kill anything that is managed, leave some to test that path though
 
         if self.GlobalWorker != None and  self.GlobalCreator == True:
             self.GlobalWorker.exit(NoReply=True)
@@ -142,6 +143,7 @@ class MgrCorps(Corps):
             ContWorker.exit(NoReply=True)
 
         print(f'{self.my_Tag()} exiting')
+        return True
 
 
 def run_CorpsTest2(Version, ConfigFiles, P):

@@ -8,11 +8,18 @@
         super().__init__()
 
 
+    e x i t ( )
+
+    Should *not* be overridden by subclasses.  Can be called explicitly to cleanup and exit. Will be called automat-
+    icaLLy if its Mgr Corps exits.  Calls cleanup(), which should be overridden if the Corps has resources such as
+    files to flush, database transactions to commit, etc.
+
+
     c l e a n u p ( )
 
-    When exit() is called on a Corps its cleanup() will automatically be called.  It, in turn, should call cleanup()
-    on all of its Workers.  All cleanup() implementations should also close database transactions, flush and close
-    files, etc.
+    When exit() is called on a Corps its cleanup() will automatically be called.  Should be overridden if the Corps
+    has resources such as files to flush, database transactions to commit, etc.  Can call exit() on any of its
+    Workers, including Corps.
 
 
     m y _ N a m e ( )
@@ -188,9 +195,7 @@ class CorpsMgr(Conc):
         NumEnvs = _EnvTable.num_Envs()  # assumes EnvIds are sequential (not true for ContCorps and ExtCorps)
         EnvNames = EnvNameGen(MIN_ENVID_plus_1, NumEnvs-1)
         for RemoteEnv in EnvNames:
-            RemoteEnv.__kill__()
-
-        time.sleep(0.1 * NumEnvs)
+            RemoteEnv.__kill__(NoReply=True)
 
         # Now us
         kill(pid, 0)
@@ -230,7 +235,12 @@ class Corps(Conc):
         TheThread.TheConcAddr = NullConcAddr
 
 
-    def __kill__(self):
+    def cleanup(self):
+        return True
+
+
+    def exit(self):
+        self.cleanup()
         info(f'Corps Mgr in {self.my_Tag()} exiting')
 
         # Send kill request to CorpsMgr
@@ -238,16 +248,6 @@ class Corps(Conc):
         CorpsMgr = CorpsMgrName(CorpsMgrConcAddr)
 
         CorpsMgr.__kill__(NoReply=True)
-
-
-    def cleanup(self):
-        return True
-
-
-    def exit(self):
-        self.cleanup()
-        time.sleep(0.1)
-        self.__kill__()
         return True
 
 

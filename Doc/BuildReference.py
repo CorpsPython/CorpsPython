@@ -9,7 +9,7 @@ from importlib import import_module
 
 
 
-MainTitle = 'C o r p s   P y t h o n   V e r s i o n   0 . 2 . 0   R e f e r e n c e'
+MainTitle = 'C o r p s   P y t h o n   V e r s i o n   0 . 1   R e f e r e n c e'
 
 RefFile = '.\Doc\Reference.txt'
 

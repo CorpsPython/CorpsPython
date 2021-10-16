@@ -9,11 +9,18 @@
         super().__init__()
 
 
+    e x i t ( )
+
+    Should *not* be overridden by subclasses.  Can be called explicitly by the Conc's Mgr to cleanup and exit. Calls
+    cleanup(), which should be overridden if the Conc has resources such as files to flush, database transactions to
+    commit, etc.
+
+
     c l e a n u p ( )
 
-    When exit() is called on a Corps its cleanup() will automatically be called.  It, in turn, should call cleanup()
-    on all of its Workers, including Concs.  Conc subclasses should call it on all of its Workers.  All cleanup()
-    implementations should also close database transactions, flush and close files, etc.
+    When exit() is called on a Conc its cleanup() will automatically be called.  Should be overridden if the Conc
+    has resources such as files to flush, database transactions to commit, etc.  Can call exit() on any of its
+    Workers.
 
 
     m y _ N a m e ( )
@@ -36,7 +43,7 @@
 from threading import Lock
 from CorpsMsg import *
 from queue import Queue
-from EnvGlobals import TheThread, NullConcAddr, _ThreadPool
+from EnvGlobals import TheThread, NullConcAddr, _ThreadPool, _Addr2Conc
 from ConcMeta import ConcMeta
 from sys import exc_info
 from traceback import format_exception
@@ -154,7 +161,13 @@ class __Conc():
 
 
     def cleanup(self):
-        pass
+        return True
+
+
+    def exit(self):
+        self.cleanup()
+        _Addr2Conc.unregister(self.ConcAddr)
+        return True
 
 
     def __my_Self__(self):
