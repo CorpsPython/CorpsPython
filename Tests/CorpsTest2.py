@@ -27,23 +27,28 @@ class WorkerCorps(Corps):
     def __init__(self):
         super().__init__()
 
-        print(f'{self.my_Tag()} starting')
+        print(f'{self} starting')
         self.start()
 
 
     def run_tests(self):
-        print(f'{self.my_Tag()} testing completed')
+        print(f'{self} testing completed')
         return True
 
 
+    def mirror(self, a):
+        return a
+
+
     def cleanup(self):
-        print(f'{self.my_Tag()} exiting')
+        print(f'{self} exiting')
         return True
 
 
 class MgrCorps(Corps):
     def __init__(self, MaxLevel, Level, NumWorkers, GlobalWorker, ConfigFiles=[]):
         super().__init__()
+        print(f'{self} initializing')
 
         self.ExtWorkers = []
         self.ContWorkers = []
@@ -55,37 +60,33 @@ class MgrCorps(Corps):
             self.WorkerTags.append(Tag)
             self.GlobalWorker = create_Corps(WorkerCorps, Managed=False, Ext=True, Tag=Tag, ConfigFiles=ConfigFiles)
             self.GlobalCreator = True
-            #print(f'{self.my_Tag()} created GlobalWorker {Tag} ')
         else:
             self.GlobalWorker = GlobalWorker
             self.GlobalCreator = False
 
         if Level < MaxLevel:
             Tag = 'MgrCorps.' + f'{Level + 1}'
-            self.NextMgr = create_Corps(MgrCorps, MaxLevel, Level + 1, NumWorkers, self.GlobalWorker, Managed=True, \
+            self.NextMgr = create_Corps(MgrCorps, MaxLevel, Level + 1, NumWorkers, self.GlobalWorker, \
                                                                         Ext=True, Tag=Tag, ConfigFiles=ConfigFiles)
             self.WorkerTags.append(Tag)
-            #print(f'{self.my_Tag()} created MgrCorps {Tag}')
         else:
             self.NextMgr = None
 
         for i in range(NumWorkers):
             Tag = 'ExtWorkerCorps.' + f'{Level}.' + f'{i}'
             self.WorkerTags.append(Tag)
-            self.ExtWorkers.append(create_Corps(WorkerCorps, Managed=True, Ext=True, Tag=Tag, ConfigFiles=ConfigFiles))
-            #print(f'{self.my_Tag()} created ExtCorps {Tag}')
+            self.ExtWorkers.append(create_Corps(WorkerCorps, Ext=True, Tag=Tag, ConfigFiles=ConfigFiles))
 
         for i in range(NumWorkers):
             Tag = 'ContWorkerCorps.' + f'{Level}.' + f'{i}'
             self.WorkerTags.append(Tag)
-            self.ContWorkers.append(create_Corps(WorkerCorps, Managed=True, Ext=False, Tag=Tag, ConfigFiles=ConfigFiles))
-            #print(f'{self.my_Tag()} created ConCorps {Tag}')
+            self.ContWorkers.append(create_Corps(WorkerCorps, Ext=False, Tag=Tag, ConfigFiles=ConfigFiles))
 
 
         # todo: create Conc in Env 1 and pass various Corps to it to test
 
 
-        print(f'{self.my_Tag()} starting')
+        print(f'{self} starting')
         self.start()
 
 
@@ -95,7 +96,22 @@ class MgrCorps(Corps):
             Must be in same order created for Rets and WorkerTags to be lined up
         '''
 
-        print(f'{self.my_Tag()} testing started')
+        print(f'{self} testing started')
+
+
+        # test Corps class's my_ExtName()
+        aRet = self.GlobalWorker.my_ExtName()
+        theGlobal = aRet.Ret
+
+        assert f'{self.GlobalWorker}' == f'{theGlobal}'
+
+        a = '12345678'
+        aRet = (self.GlobalWorker.mirror(a)).Ret
+        assert aRet == a
+
+        aRet = (theGlobal.mirror(a)).Ret
+        assert aRet == a
+
 
         Rets = []
 
@@ -119,11 +135,11 @@ class MgrCorps(Corps):
                 Ret = Rets[i].Ret
 
             except:
-                print(f'\n{self.my_Tag()}:  {self.WorkerTags[i]}' +
+                print(f'\n{self}:  {self.WorkerTags[i]}' +
                                                                 f'   E x c e p t i o n: exec_info: {exc_info()}\n')
                 return False
 
-        print(f'{self.my_Tag()} testing completed')
+        print(f'{self} testing completed')
         return True
 
 
@@ -142,7 +158,7 @@ class MgrCorps(Corps):
         for ContWorker in self.ContWorkers:
             ContWorker.exit(NoReply=True)
 
-        print(f'{self.my_Tag()} exiting')
+        print(f'{self} exiting')
         return True
 
 
@@ -158,9 +174,10 @@ def run_CorpsTest2(Version, ConfigFiles, P):
 
     # todo: put the original back
     #TheMgrCorps = create_Corps(MgrCorps, P.CorpsDepth, 1, P.NumClientsServers, None, Managed=False, Ext=True, \
-     #                                                                       Tag='MgrCorps.1', ConfigFiles=ConfigFiles)
-    TheMgrCorps = create_Corps(MgrCorps, 3, 1, 2, None, Managed=False, Ext=True, Tag='MgrCorps.1', \
-                                                                                           ConfigFiles=ConfigFiles)
+    #                                                                       Tag='MgrCorps.1', ConfigFiles=ConfigFiles)
+
+    TheMgrCorps = create_Corps(MgrCorps, 3, 1, 2, None, Tag='MgrCorps.1', ConfigFiles=ConfigFiles)
+    #TheMgrCorps = create_Corps(MgrCorps, 1, 1, 1, None, Tag='MgrCorps.1', ConfigFiles=ConfigFiles)
 
     print(f'\n{Version} \nRunning on Host {my_Host()} ({my_Ip()}) Port {my_Port()}\n')
     print(f'Pickle:  {versions()}')
