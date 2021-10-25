@@ -65,7 +65,7 @@ if __name__ == '__main__':
     os.environ['NumEnvs'] = str(P.NumEnvs)
 
     ConfigFiles = ['Tests/CorpsTestConfig.py']
-    CorpsPythonVersion = 'C o r p s   P y t h o n   0 . 1 . 6'
+    CorpsPythonVersion = 'C o r p s   P y t h o n   0 . 1 . 7'
 
 
     print(f'\n{CorpsPythonVersion}   T e s t i n g   S t a r t e d')

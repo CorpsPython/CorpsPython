@@ -3,17 +3,10 @@
     A Conc is a type of Worker with a medium grain-size.
 
 
-    i n i t ( )
+    _ _ i n i t _ _ ( )
 
     A Conc subclass's __init__() should call:
         super().__init__()
-
-
-    e x i t ( )
-
-    Should *not* be overridden by subclasses.  Can be called explicitly by the Conc's Mgr to cleanup and exit. Calls
-    cleanup(), which should be overridden if the Conc has resources such as files to flush, database transactions to
-    commit, etc.
 
 
     c l e a n u p ( )
@@ -23,9 +16,28 @@
     Workers.
 
 
+    e x i t ( )
+
+    Should *not* be overridden by subclasses.  Can be called explicitly by the Conc's Mgr to cleanup and exit. Calls
+    cleanup(), which should be overridden if the Conc has resources such as files to flush, database transactions to
+    commit, etc.
+
+
+    m y _ C l a s s ( )
+
+    Returns the text name of the Conc's Class
+
+
+    m y _ M g r ( )
+
+    Returns a Name for the Mgr Conc (the Conc that created this instance), if any.  Otherwise, None.
+
+
     m y _ N a m e ( )
 
-    Returns a new Name of the Conc instance.
+    Returns a new Name of the Conc instance.  Used to return the instance Name or to pass the instance Name as a
+    method or function argument to another Conc.
+
 '''
 
 '''
@@ -43,14 +55,14 @@
 from threading import Lock
 from CorpsMsg import *
 from queue import Queue
-from EnvGlobals import TheThread, NullConcAddr, _ThreadPool, _Addr2Conc
+from EnvGlobals import TheThread, NullConcAddr, _ThreadPool, _Addr2Conc, my_CorpsTag
 from ConcMeta import ConcMeta
 from sys import exc_info
 from traceback import format_exception
 from ResultsCache import ResultsCache
-from inspect import stack, getmodule
 from Name import proxy, Name
 from logging import error
+from importlib import import_module
 
 
 
@@ -174,15 +186,25 @@ class __Conc():
         return self.ConcAddr
 
 
+    def my_Class(self):
+        return self.__class__.__name__
+
+
+    def my_Mgr(self):
+        return self.Mgr
+
+
     def my_Name(self):
-        frm = stack()[1]
-        CallingModule = getmodule(frm[0])
+        ''' Returns a new Name for the Conc instance '''
 
         SelfClassName = self.__class__.__name__
+        CallingModuleName = self.__class__.__module__
+        CallingModule = import_module(CallingModuleName)
+
         ConcClassProxy = proxy(self.__class__, SelfClassName + 'Name', CallingModule)
 
         NewProxy = ConcClassProxy(self.ConcAddr)
-        NewName = Name(NewProxy, SelfClassName, CallingModule.__name__)
+        NewName = Name(NewProxy, SelfClassName, CallingModuleName)
         return NewName
 
 
@@ -203,7 +225,7 @@ class __Conc():
 
 
     def __repr__(self):
-        return f'Conc {self.ConcAddr}'
+        return f'Conc {my_CorpsTag()}:{self.ConcAddr}'
 
 
 class Conc(__Conc, metaclass=ConcMeta):

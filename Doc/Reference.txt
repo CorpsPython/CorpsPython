@@ -9,13 +9,39 @@ W o r k e r s
 
     Creates a Corps.
 
-    create_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs)
+    create_Corps(CorpsClass, *args, Tag="No Name", Ext=True, Managed=True, ConfigFiles=[], LocType=LocType.Auto,                                                                                                 LocVal=None, **kwargs)
 
         CorpsClass is the class of the Corps to load.
+
+        Tag
+            A text tag for the Corps that can be used to identify it in console or log messages.  It is recommended
+            that it be unique.
+
+        Ext
+            True for ExtCorps, False for Cont Corps
+
+        Managed
+            True if the creating Corps should automatically manage the new Corps, False otherwise.  If the Corps is
+            being created by a script it is a top-level ExtCorps with no Mgr Corps, so the Managed flag is ignored.
 
         ConfigFiles is a list of Config file names.  See the Config Files entry below for a list of possible
             parameter entries in the Config File.  The Config files are processed in order - later entries for the
             same parameter override earlier ones.
+
+        LocType and LocValue
+            LocType.Auto LocVal=None
+                - default
+
+            LocType.Host LocVal=name/ip
+                - not implemented yet
+
+            LocType.Cluster LocVal=ClusterName
+                - type of Auto Loc, that restricts it to a Corps Python-chosen Host in the named Cluster in this Region
+                - not implemented yet
+
+            LocType.Region LocVal=RegionName
+                - type of Auto Loc, that restricts it to a Corps Python-chosen Host and Cluster in the named Region
+                - not implemented yet
 
         *args and **kwargs are regular parameters to the Corps class's __init__
 
@@ -61,32 +87,48 @@ W o r k e r s
 
 C o r p s
 
-    A Corps is a large-grained Worker.
+    A Corps is a large-grained Worker.  It is fronted by a Conc with the Corps' Api, so all Conc methods also apply
+    to Corps.  Note that some may be overridden; their updated description appears here.
 
 
-    i n i t ( )
+    _ _ i n i t _ _ ( )
 
     A Corps subclass's __init__() should call:
         super().__init__()
-
-
-    e x i t ( )
-
-    Should *not* be overridden by subclasses.  Can be called explicitly to cleanup and exit. Will be called automat-
-    icaLLy if its Mgr Corps exits.  Calls cleanup(), which should be overridden if the Corps has resources such as
-    files to flush, database transactions to commit, etc.
 
 
     c l e a n u p ( )
 
     When exit() is called on a Corps its cleanup() will automatically be called.  Should be overridden if the Corps
     has resources such as files to flush, database transactions to commit, etc.  Can call exit() on any of its
-    Workers, including Corps.
+    Workers, including Corps, whether managed or unmanaged.
 
 
-    m y _ N a m e ( )
+    e x i t ( )
 
-    Returns a new Name of the Corps instance.
+    Should *not* be overridden by subclasses.  Can be called explicitly to cleanup and exit. Will be called automat-
+    icaLLy if its Mgr Corps exits.  Best practice is for the Mgr Corps to make the call so it can ensure all existing
+    references to the exiting Corps are negated.  Calls cleanup(), which should be overridden if the Corps has resources
+    such as files to flush, database transactions to commit, etc.
+
+
+    m y _ M g r ( )
+
+    Returns an ExtName for the Mgr Corps (the Corp that created this instance), if any.  If the Corps is unmanaged it
+    returns None.
+
+
+    m y _ E x t N a m e ( )
+
+    Returns a new ExtName of the Corps instance.  Used to return the instance ExtName or to pass the instance ExtName
+    as a method or function argument to another Corps.
+
+    Do not use my_Name(), inherited from conc, for that purpose.  Instead my_Name() should be used for Workers within
+    the instance's logical address space, such as Concs and Funcs.
+
+    Any Corps, including ContCorps, will not recognize the return from my_Name() passed to it as it is not within
+    its own logical address space.
+
 
 
 
@@ -95,17 +137,10 @@ C o n c s
     A Conc is a type of Worker with a medium grain-size.
 
 
-    i n i t ( )
+    _ _ i n i t _ _ ( )
 
     A Conc subclass's __init__() should call:
         super().__init__()
-
-
-    e x i t ( )
-
-    Should *not* be overridden by subclasses.  Can be called explicitly by the Conc's Mgr to cleanup and exit. Calls
-    cleanup(), which should be overridden if the Conc has resources such as files to flush, database transactions to
-    commit, etc.
 
 
     c l e a n u p ( )
@@ -115,9 +150,28 @@ C o n c s
     Workers.
 
 
+    e x i t ( )
+
+    Should *not* be overridden by subclasses.  Can be called explicitly by the Conc's Mgr to cleanup and exit. Calls
+    cleanup(), which should be overridden if the Conc has resources such as files to flush, database transactions to
+    commit, etc.
+
+
+    m y _ C l a s s ( )
+
+    Returns the text name of the Conc's Class
+
+
+    m y _ M g r ( )
+
+    Returns a Name for the Mgr Conc (the Conc that created this instance), if any.  Otherwise, None.
+
+
     m y _ N a m e ( )
 
-    Returns a new Name of the Conc instance.
+    Returns a new Name of the Conc instance.  Used to return the instance Name or to pass the instance Name as a
+    method or function argument to another Conc.
+
 
 
 

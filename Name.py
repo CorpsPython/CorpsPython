@@ -212,7 +212,7 @@ class Name():
         try:
             TheClass = getattr(TheModule, TheClassName)
         except:
-            error(f'__setstate__ process {getpid()} gettattr for {TheClassName} failed')
+            error(f'__setstate__ process {getpid()} gettattr for {TheClassName} in {TheModuleName} failed')
 
         TheProxyClass = proxy(ProxyTarget, TheClassName+'Name', TheModule)
 

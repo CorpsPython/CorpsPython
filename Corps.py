@@ -1,30 +1,46 @@
 '''
-    A Corps is a large-grained Worker.
+    A Corps is a large-grained Worker.  It is fronted by a Conc with the Corps' Api, so all Conc methods also apply
+    to Corps.  Note that some may be overridden; their updated description appears here.
 
 
-    i n i t ( )
+    _ _ i n i t _ _ ( )
 
     A Corps subclass's __init__() should call:
         super().__init__()
-
-
-    e x i t ( )
-
-    Should *not* be overridden by subclasses.  Can be called explicitly to cleanup and exit. Will be called automat-
-    icaLLy if its Mgr Corps exits.  Calls cleanup(), which should be overridden if the Corps has resources such as
-    files to flush, database transactions to commit, etc.
 
 
     c l e a n u p ( )
 
     When exit() is called on a Corps its cleanup() will automatically be called.  Should be overridden if the Corps
     has resources such as files to flush, database transactions to commit, etc.  Can call exit() on any of its
-    Workers, including Corps.
+    Workers, including Corps, whether managed or unmanaged.
 
 
-    m y _ N a m e ( )
+    e x i t ( )
 
-    Returns a new Name of the Corps instance.
+    Should *not* be overridden by subclasses.  Can be called explicitly to cleanup and exit. Will be called automat-
+    icaLLy if its Mgr Corps exits.  Best practice is for the Mgr Corps to make the call so it can ensure all existing
+    references to the exiting Corps are negated.  Calls cleanup(), which should be overridden if the Corps has resources
+    such as files to flush, database transactions to commit, etc.
+
+
+    m y _ M g r ( )
+
+    Returns an ExtName for the Mgr Corps (the Corp that created this instance), if any.  If the Corps is unmanaged it
+    returns None.
+
+
+    m y _ E x t N a m e ( )
+
+    Returns a new ExtName of the Corps instance.  Used to return the instance ExtName or to pass the instance ExtName
+    as a method or function argument to another Corps.
+
+    Do not use my_Name(), inherited from conc, for that purpose.  Instead my_Name() should be used for Workers within
+    the instance's logical address space, such as Concs and Funcs.
+
+    Any Corps, including ContCorps, will not recognize the return from my_Name() passed to it as it is not within
+    its own logical address space.
+
 '''
 
 '''
@@ -37,11 +53,11 @@
 
 
 from Conc import Conc
-from ConcAddr import ConcAddr, ExtAddr
+from ConcAddr import ConcAddr, ExtAddr, ConcAddr_to_ExtAddr
 from EnvRecord import EnvRecord, XferEnvRecord, CorpsEnvRecord, XferCorpsEnvRecord
 from Env import Env, EnvName    # EnvName is dynamically genned by proxy()
 from EnvGlobals import TheThread, NullConcAddr, _ConcIdMgr, _Addr2Conc, DefaultEnvRecord, _EnvTable,  my_Ip, my_Port, \
-    DefaultCorpsEnvRecord, _ExtCorpsEnvTable, _ContCorpsEnvTable
+    DefaultCorpsEnvRecord, _ExtCorpsEnvTable, _ContCorpsEnvTable, my_CorpsTag
 from os import getpid, kill
 from multiprocessing import Process, Queue
 from EnvAddrSpace import MIN_ENVID, MIN_ENVID_plus_1, MAX_ENVID, CORPSMGR_ENVID
@@ -52,6 +68,8 @@ from CorpsStatus import MajorStatus, MinorStatus
 import Workers
 import time
 from sys import exc_info
+from Name import proxy, Name
+from importlib import import_module
 
 
 
@@ -105,7 +123,7 @@ class CorpsMgr(Conc):
         for NewEnvId in EnvIds:
             #t1 = perf_counter()
             CorpsMgrQueue = Queue()
-            NewEnv = Process(target=Env, args=(NewEnvId, CorpsMgrQueue, ConfigFiles))
+            NewEnv = Process(target=Env, args=(NewEnvId, my_CorpsTag(), CorpsMgrQueue, ConfigFiles))
 
             NewEnv.start()
 
@@ -125,7 +143,7 @@ class CorpsMgr(Conc):
 
         #print(f'CorpsMgr {self.ConcAddr} init: queue get {NumEnvs-1} Env processes in {tot_t} seconds')
 
-        info(f'CorpsMgr {self.my_Name()} EnvTable:\n{_EnvTable}')
+        info(f'{self} EnvTable:\n{_EnvTable}')
 
         # Send EnvRecordSpecs to all Envs except ours
         EnvNames = EnvNameGen(MIN_ENVID_plus_1, NumEnvs-1)
@@ -139,13 +157,20 @@ class CorpsMgr(Conc):
 
         # We're up!
         self.MajorStatus = MajorStatus.Running
-        info(f'CorpsMgr {self.my_Name()} initialized, starting...')
+        info(f'{self} initialized, starting...')
 
         # The thread is no longer assigned, so cleanup
         TheThread.TheConcAddr = NullConcAddr
 
 
-    def create_Corps(self, ModuleName, CorpsClassName, Mgr, CorpsTag, is_Ext, Managed, LocType, LocVal, *args, **kwargs):
+    def create_Corps(self, ModuleName, CorpsClassName, CorpsTag, is_Ext, Managed, LocType, LocVal, *args, **kwargs):
+        if Managed == True:
+            MgrCorpsIpPort = (my_Ip(), my_Port())
+            kwargs['MgrCorpsIpPort'] = MgrCorpsIpPort
+
+        else:
+            kwargs['MgrCorpsIpPort'] = None
+
         WorkerQueue = Queue()
 
         NewCorpsProcess = Process(target=Workers.__other_process_create_Corps__, \
@@ -187,7 +212,7 @@ class CorpsMgr(Conc):
     def __kill__(self):
         pid = getpid()
         self.MajorStatus = MajorStatus.Exiting
-        info(f'CorpsMgr {self.my_Name()} exiting')
+        info(f'{self} exiting')
 
         # todo: kill all Corps we are managing
 
@@ -202,25 +227,23 @@ class CorpsMgr(Conc):
         kill(pid, SIGTERM)
 
         self.MajorStatus = MajorStatus.Nonexistent
-        info(f'CorpsMgr {self.my_Name()} still here')
+        info(f'{self} still here')
+
+
+    def __repr__(self):
+        return f'{my_CorpsTag()} CorpsMgr'
 
 
 class Corps(Conc):
     def __init__(self):
         # Startup the EnvMgr and CorpsMgr first to get the ConcIds right
-        MgrEnv = Env(CORPSMGR_ENVID, None, self.ConfigFiles)
+        MgrEnv = Env(CORPSMGR_ENVID, self.my_Tag(), None, self.ConfigFiles)
         MgrCorps = CorpsMgr(self.ConfigFiles)
 
         # Self-initialize
         ConcId = _ConcIdMgr.new()
         assert ConcId == CORPS_CONCID, f'Corps has ConcId {ConcId} and not {CORPS_CONCID}'
-
-        # todo: add test and assign for contcorps
-        # todo: always use ExtAddrs?  assume short-lived and used to pass parms?  ok between Concs in same Corps?
-        # For ContCorps
-        #self.ConcAddr = ConcAddr(CORPSMGR_ENVID, ConcId, CORPSMGR_ENVID)
-        # For ExtCorps
-        self.ConcAddr = ExtAddr(CORPSMGR_ENVID, ConcId, CORPSMGR_ENVID, my_Ip(), my_Port())
+        self.ConcAddr = ConcAddr(CORPSMGR_ENVID, ConcId, CORPSMGR_ENVID)
         super().__init__()
 
         # Make sure thread-local data knows the Conc it's assigned to
@@ -229,7 +252,7 @@ class Corps(Conc):
         # Make sure we can be found
         _Addr2Conc.register(self, self.ConcAddr)
 
-        info(f'Corps Mgr {self.my_Tag()} initialized, starting...')
+        info(f'Corps {self.my_Tag()} initialized, starting...')
 
         # The thread is no longer assigned, so cleanup
         TheThread.TheConcAddr = NullConcAddr
@@ -249,6 +272,22 @@ class Corps(Conc):
 
         CorpsMgr.__kill__(NoReply=True)
         return True
+
+
+    def my_ExtName(self):
+        ''' Returns a new ExtName for the Corps instance '''
+
+        # todo: after we implement to_ExtName(), maybe rewrite using Conc's verion and converting
+
+        SelfClassName = self.__class__.__name__
+        CallingModuleName = self.__class__.__module__
+        CallingModule = import_module(CallingModuleName)
+
+        CorpsClassProxy = proxy(self.__class__, SelfClassName + 'Name', CallingModule)
+
+        NewProxy = CorpsClassProxy(ConcAddr_to_ExtAddr(self.ConcAddr, my_Ip(), my_Port()))
+        NewName = Name(NewProxy, SelfClassName, CallingModuleName)
+        return NewName
 
 
     def is_Ext(self):

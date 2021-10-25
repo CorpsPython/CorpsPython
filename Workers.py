@@ -4,13 +4,40 @@
 
     Creates a Corps.
 
-    create_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs)
+    create_Corps(CorpsClass, *args, Tag="No Name", Ext=True, Managed=True, ConfigFiles=[], LocType=LocType.Auto, \
+                                                                                                LocVal=None, **kwargs)
 
         CorpsClass is the class of the Corps to load.
+
+        Tag
+            A text tag for the Corps that can be used to identify it in console or log messages.  It is recommended
+            that it be unique.
+
+        Ext
+            True for ExtCorps, False for Cont Corps
+
+        Managed
+            True if the creating Corps should automatically manage the new Corps, False otherwise.  If the Corps is
+            being created by a script it is a top-level ExtCorps with no Mgr Corps, so the Managed flag is ignored.
 
         ConfigFiles is a list of Config file names.  See the Config Files entry below for a list of possible
             parameter entries in the Config File.  The Config files are processed in order - later entries for the
             same parameter override earlier ones.
+
+        LocType and LocValue
+            LocType.Auto LocVal=None
+                - default
+
+            LocType.Host LocVal=name/ip
+                - not implemented yet
+
+            LocType.Cluster LocVal=ClusterName
+                - type of Auto Loc, that restricts it to a Corps Python-chosen Host in the named Cluster in this Region
+                - not implemented yet
+
+            LocType.Region LocVal=RegionName
+                - type of Auto Loc, that restricts it to a Corps Python-chosen Host and Cluster in the named Region
+                - not implemented yet
 
         *args and **kwargs are regular parameters to the Corps class's __init__
 
@@ -57,36 +84,6 @@
 '''
     Future Ideas:
     
-        - create_Corps()
-
-            - Ext=True
-                - False for Cont Corps, True for Ext Corps
-
-            - Tag=TagName
-                - default 'None'
-
-            - Mgr=Name
-                - default is auto chosen as creating Corps
-                
-            - Loc=
-                LocType.Auto LocVal=None
-                    -default
-                                
-                LocType.Host LocVal=name/ip
-                
-                LocType.Cluster LocVal=ClusterName
-                    - Name denotes a Conc or Corps?
-                    - type of Auto Loc (that restricts it)
-                    
-                LocType.Region LocVal=RegionName
-                    - Name denotes a Conc or Corps?
-                    - type of Auto Loc (that restricts it)
-
-
-        - delete_Workers()
-            - Not implemented yet
-
-
         - linkto()
             - link (i.e. become Mgr of) an existing Ext Corps 
             - Not implemented yet
@@ -163,7 +160,7 @@ class LocType(IntEnum):
 
 
 
-def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, Managed=False, ConfigFiles=[], \
+def create_Corps(CorpsClass, *args, Tag="No Name", Ext=True, Managed=True, ConfigFiles=[], \
                                                                         LocType=LocType.Auto, LocVal=None, **kwargs):
     ''' create an ExtCorps from a script or an ExtCorps or ContCorps from calling Corps '''
 
@@ -185,7 +182,7 @@ def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, Managed=F
         CorpsMgrConcAddr = ConcAddr(CORPSMGR_ENVID, CORPSMGR_CONCID, CORPSMGR_ENVID)
         TheCorpsMgr = Corps.CorpsMgrName(CorpsMgrConcAddr)
 
-        FutRet = TheCorpsMgr.create_Corps(CallingModule.__name__, CorpsClass.__name__, Mgr, Tag, Ext, Managed, LocType, \
+        FutRet = TheCorpsMgr.create_Corps(CallingModule.__name__, CorpsClass.__name__, Tag, Ext, Managed, LocType, \
                                                                                            LocVal, *args, **kwargs)
         # todo: Test for Exception
 
@@ -207,9 +204,7 @@ def create_Corps(CorpsClass, *args, Mgr=None, Tag="No Name", Ext=True, Managed=F
         NewCorps_Ip = NewCorpsData[0]
         NewCorps_Port = NewCorpsData[1]
 
-
-    # todo: Managed or Ext? see Corps/create_Corps()
-    if Managed == True:
+    if Managed == True and EnvStatus == MajorStatus.Running:
         NewConcAddr = ConcAddr(CORPSMGR_ENVID, CORPS_CONCID, NewCorps_EnvId)
     else:
         NewConcAddr = ExtAddr(CORPSMGR_ENVID, CORPS_CONCID, CORPSMGR_ENVID, NewCorps_Ip, NewCorps_Port)
@@ -252,6 +247,8 @@ def __create_local_Conc__(Mgr, CallingModule, ConcClass, *args, **kwargs):
     ConcClassInModule = getattr(CallingModule, ConcClass.__name__)
 
     kwargs['ConcAddr'] = NewConcAddr
+    kwargs['Mgr'] = Mgr
+
     NewConc = ConcClassInModule(*args, **kwargs)
     
     _Addr2Conc.register(NewConc, NewConcAddr)
@@ -275,6 +272,8 @@ def __create_remote_Conc__(Mgr, RemoteEnvId, CallingModule, ConcClass, *args, **
 
     # request object creation in remote Env
     kwargs['ConcAddr'] = NewConcAddr
+    kwargs['Mgr'] = Mgr
+
     FutRes = RemoteEnv.rem2loc_create_Conc(NewConcAddr, CallingModule.__name__, ConcClass.__name__, *args, **kwargs)
 
     try:

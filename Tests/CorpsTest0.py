@@ -84,9 +84,9 @@ class Client0(Conc):
         self.ClientsServers = []
         self.Iters = Iters
 
-
+        self.Me = self.my_Name()
         if self.NumClientsServers > 0:
-            self.ClientsServers = create_Concs(Service0, LocType=LocType.PerEnv, Num=self.NumClientsServers)
+            self.ClientsServers = create_Concs(Service0, Mgr=self.Me, LocType=LocType.PerEnv, Num=self.NumClientsServers)
 
         print(f'Client {self} ready for testing')
 
@@ -97,6 +97,14 @@ class Client0(Conc):
         ''' Run all of the tests, first against the global services, then against the private ones '''
 
         print(f'Client {self} starting testing')
+
+
+        # test Conc's my_Mgr() when both are Concs
+        aRet = self.ClientsServers[0].my_Mgr()
+        Me = aRet.Ret
+
+        assert f'{self.Me}' == f'{Me}'
+
 
         Requests, Errors = self.run_one_test(self.Servers, self.Iters)
         print(f'Client {self} finished {Requests} Requests with {Errors} Errors to ' + \
@@ -187,13 +195,14 @@ class Corps0(Corps):
         self.NumClients = NumClients
         self.NumClientsServers = NumClientsServers
         self.NumClientIters = NumClientIters
+        self.Me = self.my_Name()
 
         self.Servers = []
         self.Clients = []
 
         if self.NumServers > 0:
             for i in range(self.NumEnvs):
-                NewServers = create_Concs(Service0, LocType=LocType.Auto, Num=self.NumServers)
+                NewServers = create_Concs(Service0, Mgr=self.Me, LocType=LocType.Auto, Num=self.NumServers)
                 self.Servers.extend(NewServers)
 
         for env in range(self.NumEnvs):
@@ -209,6 +218,27 @@ class Corps0(Corps):
         ''' Run all of the tests concurrently '''
 
         print(f'{self} testing\n')
+
+        # test Conc's my_Name()
+        aRet = self.Servers[0].my_Name()
+        theServer = aRet.Ret
+
+        assert f'{self.Servers[0]}' == f'{theServer}'
+
+        tot = 123 + 456 + 789
+        aRet = (self.Servers[0].func_adelic(123, 456, 789)).Ret
+        assert aRet == tot
+
+        aRet = (theServer.func_adelic(123, 456, 789)).Ret
+        assert aRet == tot
+
+
+        # test Conc's my_Mgr() when the Mgr is a Corps' Conc
+        aRet = self.Servers[0].my_Mgr()
+        Me = aRet.Ret
+
+        assert f'{self.Me}' == f'{Me}'
+
 
         FutRets = []
         i = 0

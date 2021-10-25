@@ -58,3 +58,7 @@ class ExtAddr(ConcAddr):
 
     def __repr__(self):
         return f'{super().__repr__()}@{self.IpAddr}:{self.Port}'
+
+
+def ConcAddr_to_ExtAddr(aConcAddr, IpAddr, Port):
+    return(ExtAddr(aConcAddr.MgrEnvId, aConcAddr.ConcId, aConcAddr.LocEnvId, IpAddr, Port))
