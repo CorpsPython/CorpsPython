@@ -26,6 +26,11 @@ class ConcMeta(type):
             obj.ConcAddr = kwargs[ConcAddr]
             del kwargs[ConcAddr]
 
+        Mgr = 'Mgr'
+        if Mgr in kwargs:
+            obj.Mgr = kwargs[Mgr]
+            del kwargs[Mgr]
+
         # store kwargs intended for Corps and delete them (to hide from end-developers in __init__())
         ConfigFiles = 'ConfigFiles'
         if ConfigFiles in kwargs:
@@ -41,6 +46,11 @@ class ConcMeta(type):
         if Tag in kwargs:
             obj.Tag = kwargs[Tag]
             del kwargs[Tag]
+
+        MgrCorpsIpPort = 'MgrCorpsIpPort'
+        if MgrCorpsIpPort in kwargs:
+            obj.MgrCorpsIpPort = kwargs[MgrCorpsIpPort]
+            del kwargs[MgrCorpsIpPort]
 
         # initialize the instance
         obj.__init__(*args, **kwargs)
