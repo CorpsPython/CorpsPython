@@ -37,6 +37,18 @@ def my_EnvStatus():
     return EnvStatus
 
 
+CorpsTag = ''
+
+def set_CorpsTag(theCorpsTag):
+    global CorpsTag
+    CorpsTag = theCorpsTag
+
+
+def my_CorpsTag():
+    global CorpsTag
+    return CorpsTag
+
+
 MyHost = None
 
 def my_Host():
@@ -84,17 +96,6 @@ def set_EnvId(Id):
 def my_EnvId():
     global EnvId
     return EnvId
-
-
-EnvMgrAddr = NullConcAddr      # set during init by Env, read-only thereafter
-
-def set_EnvMgrAddr(Addr):
-    global EnvMgrAddr
-    EnvMgrAddr = Addr
-
-def my_EnvMgrAddr():
-    global EnvMgrAddr
-    return EnvMgrAddr
 
 
 _MsgIdMgr = MsgIdMgr()
