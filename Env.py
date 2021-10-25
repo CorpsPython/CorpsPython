@@ -10,9 +10,9 @@
 
 from Conc import Conc
 from ConcAddr import ConcAddr
-from EnvGlobals import TheThread, NullConcAddr, set_EnvId, my_EnvId, set_EnvMgrAddr, _ConcIdMgr, _Addr2Conc, \
+from EnvGlobals import TheThread, NullConcAddr, set_EnvId, my_EnvId, _ConcIdMgr, _Addr2Conc, \
     _EnvTable, DefaultEnvRecord, DefaultCorpsEnvRecord, _ExtCorpsEnvTable, _ContCorpsEnvTable, set_MyPort, \
-    set_EnvStatus
+    set_EnvStatus, set_CorpsTag, my_CorpsTag
 from os import getpid, kill
 from importlib import import_module
 from EnvAddrSpace import CORPSMGR_ENVID
@@ -29,7 +29,7 @@ from EnvRecord import XferEnvRecord, CorpsEnvRecord
 
 
 class Env(Conc):
-    def __init__(self, EnvId, CorpsMgrQueue, ConfigFiles):
+    def __init__(self, EnvId, CorpsTag, CorpsMgrQueue, ConfigFiles):
         #from time import perf_counter
         #t1 = perf_counter()
         load_config('ConfigGlobals', ConfigFiles)
@@ -49,7 +49,7 @@ class Env(Conc):
 
         # Init some EnvGlobals
         set_EnvId(EnvId)
-        set_EnvMgrAddr(self.ConcAddr)
+        set_CorpsTag(CorpsTag)
 
         # Make sure thread-local data knows the Conc it's assigned to
         TheThread.TheConcAddr = self.ConcAddr
@@ -78,14 +78,14 @@ class Env(Conc):
         TheThread.TheConcAddr = NullConcAddr
 
         set_EnvStatus(MajorStatus.Running)
-        info(f'EnvMgr {self.my_Name()} Env {EnvId} initialized')
+        info(f'{self} initialized')
 
         #t2 = perf_counter()
         #print(f'EnvMgr {EnvId} init: in {t2-t1} seconds')
 
 
     def __kill__(self):
-        info(f'EnvMgr {self.my_Name()} Env {self.EnvId} exiting')
+        info(f'{self} exiting')
         set_EnvStatus(MajorStatus.Exiting)
 
         Pid = getpid()
@@ -110,7 +110,7 @@ class Env(Conc):
                 TheEnvRecord.Port = anXferEnvRecord.Port
                 _EnvTable.register(EnvId, TheEnvRecord)
 
-        info(f'EnvMgr {self.my_Name()} Env {my_EnvId()} EnvTable:\n{_EnvTable}')
+        info(f'{self} EnvTable:\n{_EnvTable}')
 
         return True
 
@@ -143,4 +143,7 @@ class Env(Conc):
 
         return True
 
+
+    def __repr__(self):
+        return f'{my_CorpsTag()} EnvMgr Env {my_EnvId()}'
 
