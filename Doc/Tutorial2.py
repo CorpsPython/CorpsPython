@@ -277,10 +277,8 @@ search_files, it simply blocks waiting for the results and iterates over them an
     RegexCorps.exit()
 
 
-The full signature for create_Corps is create_Corps(CorpsClass, *args, ConfigFiles=[], **kwargs) where ConfigFiles is a
-list of Config file names and *args and **kwargs are regular parameters to the Corps class's __init__.  We are using
-the defaults for the ConfigFiles list and the keyword args, but pass NumSearchers as an arg to RegexServer __init__.
-See the Corps Python Reference for the Workers' create_Corps and the Config file documentation.
+The full signature for create_Corps is documented in the Corps Python Reference.  Here we are using the defaults for
+create_Corps, but pass NumSearchers as an arg to RegexServer __init__.
 
 Like Dir and Regex, NumSearchers (per Env) is simply an attribute in __main__ that is hardcoded now but could be
 user-provided in an appropriate front-end.  But big questions remain: How many Hosts?  How many Envs?  How many
