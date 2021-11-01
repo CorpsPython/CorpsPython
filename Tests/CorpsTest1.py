@@ -348,7 +348,7 @@ class Corps1(Corps):
                 if FutRets[Cli].ret_ready() == True:
                     try:
                         Ret = FutRets[Cli].Ret
-                        print(f'TestCorps0 Client {Cli} {self.Clients[Cli]} completed with return {Ret}')
+                        print(f'TestCorps0 Client {self.Clients[Cli]} completed with return {Ret}')
 
                     except:
                         print(f'\nT e s t C o r p s 0   C l i e n t {Cli} {self.Clients[Cli]}' +
