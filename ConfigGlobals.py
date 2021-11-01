@@ -2,7 +2,13 @@
 '''
     Config Global attributes for each instantiated Corps with defaults.
 
-    Defaults can be overridden by user-supplied Config files passed to create_Corps() in Workers.py.
+    Defaults can be overridden by user-supplied Config files or dicts passed to create_Corps() in Workers.py.
+
+    In a file the attribute can be assigned as:
+        NumEnvs = 16
+
+    In a dict the same attribute can be specified as:
+        'NumEnvs' : 16
 
     Most of these attributes are for experts only!
 
@@ -25,57 +31,57 @@
         NumEnvs = int(os.environ['NumEnvs'])
 
 
-    N u m E n v s
+    N u m E n v s = 8
 
     Number of Environments when Corps is deployed
 
 
-    T h r e a d P o o l _ M i n T h r e a d s
+    T h r e a d P o o l _ M i n T h r e a d s = 10
 
     Minimum number of threads in ThreadPool
 
 
-    T h r e a d P o o l _ T h r e a d s I n c
+    T h r e a d P o o l _ T h r e a d s I n c = 10
 
     Number of threads added when ThreadPool's WorkQ's Length exceeds ThreadPool_MaxQueueLength
 
 
-    T h r e a d P o o l _ M a x Q u e u e L e n g t h
+    T h r e a d P o o l _ M a x Q u e u e L e n g t h = 10
 
     Maximum length of ThreadPool's WorkQ before ThreadPool_ThreadsInc threads are added
 
 
-    N e t w o r k i n g _ M a x _ C o n n e c t i o n _ A t t e m p t s
+    N e t w o r k i n g _ M a x _ C o n n e c t i o n _ A t t e m p t s = 100
 
     Maximum number of attempts to connect to a service
 
 
-    N e t w o r k i n g _ C l i e n t _ T i m e o u t
+    N e t w o r k i n g _ C l i e n t _ T i m e o u t = 60
 
     Number of seconds before a client network operation times out
 
 
-    N e t w o r k i n g _ S e r v e r _ T i m e o u t
+    N e t w o r k i n g _ S e r v e r _ T i m e o u t = 600
 
     Number of seconds before a server network operation times out
 
 
-    N e t w o r k i n g _ M a x _ Q u e u e d _ C o n n _ R e q u e s t s
+    N e t w o r k i n g _ M a x _ Q u e u e d _ C o n n _ R e q u e s t s = 100
 
     Maximum number of connecton requests in queue before refusing any more
 
 
-    M a x _ M s g _ R e q u e s t _ A t t e m p t s
+    M a x _ M s g _ R e q u e s t _ A t t e m p t s = 50
 
     Max round-trip attempts to send and respond to a Msg request between two Workers
 
 
-    R e s u l t s C a c h e _ M a x _ E n t r y _ T T L
+    R e s u l t s C a c h e _ M a x _ E n t r y _ T T L = timedelta(seconds=1)
 
     Maximum time to live for a Cache entry
 
 
-    R e s u l t s C a c h e _ M i n _ C l e a n _ I n t e r v a l
+    R e s u l t s C a c h e _ M i n _ C l e a n _ I n t e r v a l = timedelta(seconds=2)
 
     Minimum time between cleaning of old entries
 '''
@@ -87,49 +93,60 @@ from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 
 
-''' Number of Environments when Corps is deployed '''
 NumEnvs = 8
 
-
-''' ThreadPool '''
-# Minimum number of threads in ThreadPool
 ThreadPool_MinThreads = 10
-
-# Number of threads added when ThreadPool's WorkQ's Length exceeds ThreadPool_MaxQueueLength
 ThreadPool_ThreadsInc = 10
-
-# Maximum length of ThreadPool's WorkQ before ThreadPool_ThreadsInc threads are added
 ThreadPool_MaxQueueLength = 10
 
-
-''' Networking '''
-# Maximum number of attempts to connect to a service
 Networking_Max_Connection_Attempts = 100
-
-# Number of seconds before a client network operation times out
 Networking_Client_Timeout = 60
-
-# Number of seconds before a server network operation times out
 Networking_Server_Timeout = 600
-
-# Maximum number of connecton requests in queue before refusing any more
 Networking_Max_Queued_Conn_Requests = 100
 
-
-''' Message Passing '''
-# Max round-trip attempts to send and respond to a Msg request between two Workers
 Max_Msg_Request_Attempts = 50
 
-
-''' Results Cache '''
-# Maximum time to live for a Cache entry
 ResultsCache_Max_Entry_TTL = timedelta(seconds=1)
-
-# Minimum time between cleaning of old entries
 ResultsCache_Min_Clean_Interval = timedelta(seconds=2)
 
-
-''' Logging '''
 Logging_Level = WARNING
 Logging_Format = '%(levelno)s %(process)d %(asctime)s.%(msecs)03d %(message)s'
 Logging_Datefmt='%y-%m-%d %H:%M:%S'
+
+
+# Internal Use Only
+Tag = 'No Name'
+Ext = False
+LocType = 0
+LocVal = 0
+Managed = False
+MgrCorpsIpPort = (0, 0)
+
+
+GlobalsDict = {
+    'NumEnvs': NumEnvs,
+
+    'ThreadPool_MinThreads': ThreadPool_MinThreads,
+    'ThreadPool_ThreadsInc': ThreadPool_ThreadsInc,
+    'ThreadPool_MaxQueueLength': ThreadPool_MaxQueueLength,
+
+    'Networking_Max_Connection_Attempts': Networking_Max_Connection_Attempts,
+    'Networking_Client_Timeout': Networking_Client_Timeout,
+    'Networking_Server_Timeout': Networking_Server_Timeout,
+    'Networking_Max_Queued_Conn_Requests': Networking_Max_Queued_Conn_Requests,
+
+    'Max_Msg_Request_Attempts': Max_Msg_Request_Attempts,
+
+    'ResultsCache_Max_Entry_TTL': ResultsCache_Max_Entry_TTL,
+    'ResultsCache_Min_Clean_Interval': ResultsCache_Min_Clean_Interval,
+
+    'Logging_Level': Logging_Level,
+    'Logging_Format': Logging_Format,
+    'Logging_Datefmt': Logging_Datefmt,
+    'Tag' : Tag,
+    'Ext': Ext,
+    'LocType': LocType,
+    'LocVal': LocVal,
+    'Managed': Managed,
+    'MgrCorpsIpPort': MgrCorpsIpPort
+    }
