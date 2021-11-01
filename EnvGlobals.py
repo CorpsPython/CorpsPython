@@ -37,18 +37,6 @@ def my_EnvStatus():
     return EnvStatus
 
 
-CorpsTag = ''
-
-def set_CorpsTag(theCorpsTag):
-    global CorpsTag
-    CorpsTag = theCorpsTag
-
-
-def my_CorpsTag():
-    global CorpsTag
-    return CorpsTag
-
-
 MyHost = None
 
 def my_Host():
