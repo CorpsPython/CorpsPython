@@ -28,7 +28,6 @@ from sys import exc_info
 from Future import Future
 from enum import IntEnum
 from ResultsCache import ResultsCacheKey
-from ConfigGlobals import Max_Msg_Request_Attempts
 from Exceptions import AsyncLocalMaxRetries
 from logging import debug
 from ConcAddr import ConcAddr, ExtAddr
@@ -45,6 +44,8 @@ class ProxyState(IntEnum):
 
 def ___proxy_make_request(self, ServerAddr, MethodName, *Args, **KwArgs):
     ''' Initiate a Msg request to a servicing Worker '''
+
+    from ConfigGlobals import Max_Msg_Request_Attempts
 
     TheConcAddr = TheThread.TheConcAddr     # the client Conc whose Thread is running and who called the proxy
 
@@ -134,6 +135,8 @@ def ___proxy_finish_request(MsgHdlr, MsgBody, FutRet, CurrentAttempt):
 
         Assumes MsgHdlr is still connected upon entry and entry State is implicitly ProxyState.RECV_RET
     '''
+
+    from ConfigGlobals import Max_Msg_Request_Attempts
 
     Attempt = CurrentAttempt
     State = ProxyState.RECV_RET     # make state explicit

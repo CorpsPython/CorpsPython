@@ -26,5 +26,8 @@ import os
 # NumEnvs is set as an environment variable in CorpsPythonTest before the Tests are begun
 NumEnvs = int(os.environ['NumEnvs'])
 
-# Example of simple setting of a Config variable
+# Example of simple setting of a Config attribute
 Max_Msg_Request_Attempts = 100
+
+# Example of a non-existent Config attribute
+BadToTheBone = 666

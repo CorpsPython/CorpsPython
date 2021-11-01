@@ -251,7 +251,7 @@ class Corps0(Corps):
         for Cli in next_futret_i:
             try:
                 Ret = FutRets[Cli].Ret
-                print(f'TestCorps0 Client {Cli} {self.Clients[Cli]} completed with return {Ret}')
+                print(f'TestCorps0 {self.Clients[Cli]} completed with return {Ret}')
 
             except:
                 print(f'\nT e s t C o r p s 0   C l i e n t {Cli} {self.Clients[Cli]}' +

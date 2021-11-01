@@ -55,7 +55,7 @@
 from threading import Lock
 from CorpsMsg import *
 from queue import Queue
-from EnvGlobals import TheThread, NullConcAddr, _ThreadPool, _Addr2Conc, my_CorpsTag
+from EnvGlobals import TheThread, NullConcAddr, _ThreadPool, _Addr2Conc
 from ConcMeta import ConcMeta
 from sys import exc_info
 from traceback import format_exception
@@ -225,7 +225,9 @@ class __Conc():
 
 
     def __repr__(self):
-        return f'Conc {my_CorpsTag()}:{self.ConcAddr}'
+        from ConfigGlobals import Tag
+
+        return f'Conc {Tag}:{self.ConcAddr}'
 
 
 class Conc(__Conc, metaclass=ConcMeta):

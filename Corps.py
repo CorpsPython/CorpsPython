@@ -41,6 +41,10 @@
     Any Corps, including ContCorps, will not recognize the return from my_Name() passed to it as it is not within
     its own logical address space.
 
+
+    m y _ T a g ( )
+
+    Returns the Tag used when the Corps was created.
 '''
 
 '''
@@ -57,7 +61,7 @@ from ConcAddr import ConcAddr, ExtAddr, ConcAddr_to_ExtAddr
 from EnvRecord import EnvRecord, XferEnvRecord, CorpsEnvRecord, XferCorpsEnvRecord
 from Env import Env, EnvName    # EnvName is dynamically genned by proxy()
 from EnvGlobals import TheThread, NullConcAddr, _ConcIdMgr, _Addr2Conc, DefaultEnvRecord, _EnvTable,  my_Ip, my_Port, \
-    DefaultCorpsEnvRecord, _ExtCorpsEnvTable, _ContCorpsEnvTable, my_CorpsTag
+    DefaultCorpsEnvRecord, _ExtCorpsEnvTable, _ContCorpsEnvTable
 from os import getpid, kill
 from multiprocessing import Process, Queue
 from EnvAddrSpace import MIN_ENVID, MIN_ENVID_plus_1, MAX_ENVID, CORPSMGR_ENVID
@@ -70,6 +74,7 @@ import time
 from sys import exc_info
 from Name import proxy, Name
 from importlib import import_module
+from Config import create_config_delta
 
 
 
@@ -86,11 +91,12 @@ def EnvNameGen(MinEnvId, MaxEnvId):
 
 
 class CorpsMgr(Conc):
-    def __init__(self, ConfigFiles):
+    def __init__(self, ConfigDelta):
         ''' Init a Corps, including all of its initial Envs (except its own - Corps Conc has already booted Env 0). '''
 
         # Import the Config data here to make sure we get the version loaded by EnvMgr
         from ConfigGlobals import NumEnvs
+        print(f'{self} initing with {NumEnvs} Envs')
         assert NumEnvs < MAX_ENVID-MIN_ENVID+1, f'Number of Envs must be less than {MAX_ENVID-MIN_ENVID+1}'
 
         # Self-initialize
@@ -123,7 +129,7 @@ class CorpsMgr(Conc):
         for NewEnvId in EnvIds:
             #t1 = perf_counter()
             CorpsMgrQueue = Queue()
-            NewEnv = Process(target=Env, args=(NewEnvId, my_CorpsTag(), CorpsMgrQueue, ConfigFiles))
+            NewEnv = Process(target=Env, args=(NewEnvId, CorpsMgrQueue, ConfigDelta))
 
             NewEnv.start()
 
@@ -163,16 +169,11 @@ class CorpsMgr(Conc):
         TheThread.TheConcAddr = NullConcAddr
 
 
-    def create_Corps(self, ModuleName, CorpsClassName, CorpsTag, is_Ext, Managed, LocType, LocVal, *args, **kwargs):
+    def create_Corps(self, ModuleName, CorpsClassName, CorpsTag, Ext, Managed, LocType, LocVal, *args, **kwargs):
         if Managed == True:
-            MgrCorpsIpPort = (my_Ip(), my_Port())
-            kwargs['MgrCorpsIpPort'] = MgrCorpsIpPort
-
-        else:
-            kwargs['MgrCorpsIpPort'] = None
+            kwargs['ConfigDicts'].append({'MgrCorpsIpPort': (my_Ip(), my_Port())})
 
         WorkerQueue = Queue()
-
         NewCorpsProcess = Process(target=Workers.__other_process_create_Corps__, \
                               args=(ModuleName, CorpsClassName, WorkerQueue, *args), kwargs=kwargs)
         NewCorpsProcess.start()
@@ -187,7 +188,7 @@ class CorpsMgr(Conc):
         NewCorps_EnvId = CORPSMGR_ENVID
 
         if Managed == True:
-            if is_Ext == True:
+            if Ext == True:
                 NewCorps_EnvId = _ExtCorpsEnvTable.register(None, NewCorpsEnvRecord)
             else:
                 NewCorps_EnvId = _ContCorpsEnvTable.register(None, NewCorpsEnvRecord)
@@ -200,7 +201,7 @@ class CorpsMgr(Conc):
             EnvNames = EnvNameGen(MIN_ENVID_plus_1, NumEnvs-1)
             FutRets = []
             for RemoteEnv in EnvNames:
-                FutRets.append(RemoteEnv.add2_CorpsEnvTable(NewCorps_EnvId, is_Ext, NewXferCorpsEnvRecord))
+                FutRets.append(RemoteEnv.add2_CorpsEnvTable(NewCorps_EnvId, Ext, NewXferCorpsEnvRecord))
 
             for FutRet in FutRets:
                 Ret = FutRet.Ret  # will blow up if we have an exception
@@ -231,14 +232,18 @@ class CorpsMgr(Conc):
 
 
     def __repr__(self):
-        return f'{my_CorpsTag()} CorpsMgr'
+        from ConfigGlobals import Tag
+
+        return f'{Tag} CorpsMgr'
 
 
 class Corps(Conc):
     def __init__(self):
-        # Startup the EnvMgr and CorpsMgr first to get the ConcIds right
-        MgrEnv = Env(CORPSMGR_ENVID, self.my_Tag(), None, self.ConfigFiles)
-        MgrCorps = CorpsMgr(self.ConfigFiles)
+        # Startup the EnvMgr and CorpsMgr first (proper ordering to make sure we get the ConcIds right)
+        ConfigDelta = create_config_delta('ConfigGlobals', self.ConfigFiles, self.ConfigDicts)
+
+        MgrEnv = Env(CORPSMGR_ENVID, None, ConfigDelta)
+        MgrCorps = CorpsMgr(ConfigDelta)
 
         # Self-initialize
         ConcId = _ConcIdMgr.new()
@@ -290,16 +295,16 @@ class Corps(Conc):
         return NewName
 
 
-    def is_Ext(self):
-        return self.Ext
-
-
     def my_Tag(self):
-        return self.Tag
+        from ConfigGlobals import Tag
+
+        return Tag
 
 
     def __repr__(self):
-        if self.is_Ext() == True:
+        from ConfigGlobals import Ext
+
+        if Ext == True:
             CorpsType = 'Ext'
         else:
             CorpsType = 'Cont'

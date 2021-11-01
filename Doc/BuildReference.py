@@ -9,7 +9,7 @@ from importlib import import_module
 
 
 
-MainTitle = 'C o r p s   P y t h o n   V e r s i o n   0 . 1   R e f e r e n c e'
+MainTitle = 'C o r p s   P y t h o n   V e r s i o n   0 . 1 . x   R e f e r e n c e'
 
 RefFile = '.\Doc\Reference.txt'
 
@@ -19,7 +19,7 @@ Files = [
     ('C o n c s', 'Conc'),
     ('F u t u r e s', 'Future'),
     ('E x c e p t i o n s', 'Exceptions'),
-    ('C o n f i g  F i l e s', 'ConfigGlobals')
+    ('C o n f i g  F i l e s / D i c t s', 'ConfigGlobals')
     ]
 
 RelPath = ''

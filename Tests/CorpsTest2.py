@@ -58,7 +58,8 @@ class MgrCorps(Corps):
         if GlobalWorker == None:
             Tag = f'GlobalWorkerCorps'
             self.WorkerTags.append(Tag)
-            self.GlobalWorker = create_Corps(WorkerCorps, Managed=False, Ext=True, Tag=Tag, ConfigFiles=ConfigFiles)
+            self.GlobalWorker = create_Corps(WorkerCorps, Managed=False, Ext=True, Tag=Tag, ConfigFiles=ConfigFiles, \
+                                             ConfigDicts=[{'Networking_Max_Connection_Attempts':101}] )
             self.GlobalCreator = True
         else:
             self.GlobalWorker = GlobalWorker
@@ -72,15 +73,23 @@ class MgrCorps(Corps):
         else:
             self.NextMgr = None
 
+        D1 = {'ThreadPool_MinThreads': 9, 'BadAttr1': 10, 'ThreadPool_ThreadsInc': 9}
+        D2 = {'Networking_Client_Timeout': 55,'Networking_Server_Timeout': 550}
+
         for i in range(NumWorkers):
             Tag = 'ExtWorkerCorps.' + f'{Level}.' + f'{i}'
             self.WorkerTags.append(Tag)
-            self.ExtWorkers.append(create_Corps(WorkerCorps, Ext=True, Tag=Tag, ConfigFiles=ConfigFiles))
+            self.ExtWorkers.append(create_Corps(WorkerCorps, Ext=True, Tag=Tag, ConfigFiles=ConfigFiles, \
+                                                ConfigDicts=[D1, D2]))
+
+        D3 = {'ThreadPool_MinThreads': 11, 'BadAttr2': 20, 'ThreadPool_ThreadsInc': 12}
+        D4 = {'Networking_Client_Timeout': 65,'Networking_Server_Timeout': 650}
 
         for i in range(NumWorkers):
             Tag = 'ContWorkerCorps.' + f'{Level}.' + f'{i}'
             self.WorkerTags.append(Tag)
-            self.ContWorkers.append(create_Corps(WorkerCorps, Ext=False, Tag=Tag, ConfigFiles=ConfigFiles))
+            self.ContWorkers.append(create_Corps(WorkerCorps, Ext=False, Tag=Tag, ConfigFiles=ConfigFiles, \
+                                                 ConfigDicts=[D3, D4]))
 
 
         # todo: create Conc in Env 1 and pass various Corps to it to test

@@ -4,8 +4,8 @@
 
     Creates a Corps.
 
-    create_Corps(CorpsClass, *args, Tag="No Name", Ext=True, Managed=True, ConfigFiles=[], LocType=LocType.Auto, \
-                                                                                                LocVal=None, **kwargs)
+    create_Corps(CorpsClass, *args, Tag="No Name", Ext=True, Managed=True, ConfigFiles=[], ConfigDicts=[],
+                                                                        LocType=LocType.Auto, LocVal=None, **kwargs)
 
         CorpsClass is the class of the Corps to load.
 
@@ -20,9 +20,13 @@
             True if the creating Corps should automatically manage the new Corps, False otherwise.  If the Corps is
             being created by a script it is a top-level ExtCorps with no Mgr Corps, so the Managed flag is ignored.
 
-        ConfigFiles is a list of Config file names.  See the Config Files entry below for a list of possible
+        ConfigFiles is a list of Config file names.  See the Config Files/Dicts entry below for a list of possible
             parameter entries in the Config File.  The Config files are processed in order - later entries for the
-            same parameter override earlier ones.
+            same parameter override earlier ones.  The Config Dicts are then processed with later entries overriding
+            anything set earlier.
+
+        ConfigDicts is a list of Config dicts.  See the Config Files entry above and the Config Files/Dicts entry below
+            for more information.
 
         LocType and LocValue
             LocType.Auto LocVal=None
@@ -160,7 +164,7 @@ class LocType(IntEnum):
 
 
 
-def create_Corps(CorpsClass, *args, Tag="No Name", Ext=True, Managed=True, ConfigFiles=[], \
+def create_Corps(CorpsClass, *args, Tag="No Name", Ext=True, Managed=True, ConfigFiles=[], ConfigDicts=[], \
                                                                         LocType=LocType.Auto, LocVal=None, **kwargs):
     ''' create an ExtCorps from a script or an ExtCorps or ContCorps from calling Corps '''
 
@@ -168,13 +172,18 @@ def create_Corps(CorpsClass, *args, Tag="No Name", Ext=True, Managed=True, Confi
 
     # todo: make sure inputs are clean/consistent
 
+    # get who called us
     frm = stack()[1]
     CallingModule = getmodule(frm[0])
 
-    # Store kwargs for new Corps (will be processed by ConcMeta)
-    kwargs['Tag'] = Tag
-    kwargs['Ext'] = Ext
+    # add our info to Config info
+    CreateDicts = ConfigDicts.copy()
+    CreateDict = {'Tag': Tag, 'Ext': Ext, 'Managed': Managed, 'LocType': LocType, 'LocVal': LocVal}
+    CreateDicts.append(CreateDict)
+
+    # Store kwargs for new Corps (will be processed by ConcMeta and stored as attributes)
     kwargs['ConfigFiles'] = ConfigFiles
+    kwargs['ConfigDicts'] = CreateDicts
 
     EnvStatus = my_EnvStatus()
     if EnvStatus == MajorStatus.Running:
@@ -194,6 +203,9 @@ def create_Corps(CorpsClass, *args, Tag="No Name", Ext=True, Managed=True, Confi
 
     elif EnvStatus == MajorStatus.Nonexistent:
         # Called from a script...create the new Corps in another process
+        CreateDict['Ext'] = True
+        CreateDict['Managed'] = False
+
         WorkerQueue = Queue()
 
         NewCorpsProcess = Process(target=__other_process_create_Corps__, \

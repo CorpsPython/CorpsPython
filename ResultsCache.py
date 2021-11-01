@@ -27,7 +27,6 @@
 
 
 from collections import namedtuple, OrderedDict
-from ConfigGlobals import ResultsCache_Max_Entry_TTL, ResultsCache_Min_Clean_Interval
 from datetime import datetime, timezone, timedelta
 
 
@@ -75,6 +74,8 @@ class ResultsCache():
          
     
     def __clean__(self):
+        from ConfigGlobals import ResultsCache_Max_Entry_TTL, ResultsCache_Min_Clean_Interval
+
         Now = datetime.now(tz = timezone.utc)
 
         if Now - self.LastCleaning < ResultsCache_Min_Clean_Interval:

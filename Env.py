@@ -12,7 +12,7 @@ from Conc import Conc
 from ConcAddr import ConcAddr
 from EnvGlobals import TheThread, NullConcAddr, set_EnvId, my_EnvId, _ConcIdMgr, _Addr2Conc, \
     _EnvTable, DefaultEnvRecord, DefaultCorpsEnvRecord, _ExtCorpsEnvTable, _ContCorpsEnvTable, set_MyPort, \
-    set_EnvStatus, set_CorpsTag, my_CorpsTag
+    set_EnvStatus
 from os import getpid, kill
 from importlib import import_module
 from EnvAddrSpace import CORPSMGR_ENVID
@@ -21,7 +21,7 @@ from multiprocessing import Process, Queue
 import queue
 from copy import copy
 from signal import SIGTERM
-from Config import load_config
+from Config import apply_config_delta
 from logging import basicConfig, info
 from CorpsStatus import MajorStatus, MinorStatus
 from EnvRecord import XferEnvRecord, CorpsEnvRecord
@@ -29,10 +29,11 @@ from EnvRecord import XferEnvRecord, CorpsEnvRecord
 
 
 class Env(Conc):
-    def __init__(self, EnvId, CorpsTag, CorpsMgrQueue, ConfigFiles):
+    def __init__(self, EnvId, CorpsMgrQueue, ConfigDelta):
         #from time import perf_counter
         #t1 = perf_counter()
-        load_config('ConfigGlobals', ConfigFiles)
+
+        apply_config_delta('ConfigGlobals', ConfigDelta)
 
         from ConfigGlobals import Logging_Format, Logging_Datefmt, Logging_Level
         basicConfig(format=Logging_Format, datefmt=Logging_Datefmt, level=Logging_Level)
@@ -49,7 +50,6 @@ class Env(Conc):
 
         # Init some EnvGlobals
         set_EnvId(EnvId)
-        set_CorpsTag(CorpsTag)
 
         # Make sure thread-local data knows the Conc it's assigned to
         TheThread.TheConcAddr = self.ConcAddr
@@ -145,5 +145,7 @@ class Env(Conc):
 
 
     def __repr__(self):
-        return f'{my_CorpsTag()} EnvMgr Env {my_EnvId()}'
+        from ConfigGlobals import Tag
+
+        return f'{Tag} EnvMgr Env {my_EnvId()}'
 
