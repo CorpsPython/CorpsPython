@@ -37,20 +37,10 @@ class ConcMeta(type):
             obj.ConfigFiles = kwargs[ConfigFiles]
             del kwargs[ConfigFiles]
 
-        Ext = 'Ext'
-        if Ext in kwargs:
-            obj.Ext = kwargs[Ext]
-            del kwargs[Ext]
-
-        Tag = 'Tag'
-        if Tag in kwargs:
-            obj.Tag = kwargs[Tag]
-            del kwargs[Tag]
-
-        MgrCorpsIpPort = 'MgrCorpsIpPort'
-        if MgrCorpsIpPort in kwargs:
-            obj.MgrCorpsIpPort = kwargs[MgrCorpsIpPort]
-            del kwargs[MgrCorpsIpPort]
+        ConfigDicts = 'ConfigDicts'
+        if ConfigDicts in kwargs:
+            obj.ConfigDicts = kwargs[ConfigDicts]
+            del kwargs[ConfigDicts]
 
         # initialize the instance
         obj.__init__(*args, **kwargs)
